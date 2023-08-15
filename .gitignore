@@ -1,0 +1,16 @@
+# Project files
+.idea
+.vc
+
+# C#
+bin
+obj
+
+# NodeJS
+node_modules
+
+# Special folders & files
+dist
+out
+*.log
+CodeFusion.sln.DotSettings.user
