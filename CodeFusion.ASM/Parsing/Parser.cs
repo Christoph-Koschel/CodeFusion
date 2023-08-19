@@ -99,7 +99,7 @@ class Parser
             int poolValue = int.Parse(intToken.text);
             int labelValue = codeUnit.insts.Count;
 
-            codeUnit.pool.Add(label.text, poolValue);
+            codeUnit.pool.Add(new Word(labelValue + codeUnit.addressOffset), poolValue);
             codeUnit.labels.Add(label.text, labelValue + codeUnit.addressOffset);
 
             return ParseInst();

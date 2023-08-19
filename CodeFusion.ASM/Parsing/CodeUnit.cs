@@ -10,7 +10,7 @@ public struct CodeUnit
     public readonly List<Inst> insts;
     public readonly Dictionary<string, long> labels;
     public readonly Dictionary<long, Token> unresolved;
-    public readonly Dictionary<string, int> pool;
+    public readonly Dictionary<Word, int> pool;
     public readonly long addressOffset;
 
     public CodeUnit(SourceFile source, long addressOffset)
@@ -19,7 +19,7 @@ public struct CodeUnit
         this.insts = new List<Inst>();
         this.labels = new Dictionary<string, long>();
         this.unresolved = new Dictionary<long, Token>();
-        this.pool = new Dictionary<string, int>();
+        this.pool = new Dictionary<Word, int>();
         this.addressOffset = addressOffset;
     }
 }
