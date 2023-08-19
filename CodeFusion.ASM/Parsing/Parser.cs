@@ -58,7 +58,7 @@ class Parser
     }
 
 
-    public CodeUnit ParseUnit(long addressOffset)
+    public CodeUnit ParseUnit(ulong addressOffset)
     {
         codeUnit = new CodeUnit(source, addressOffset);
 
@@ -70,9 +70,9 @@ class Parser
             }
         }
 
-        foreach (KeyValuePair<long, Token> unresolved in codeUnit.unresolved)
+        foreach (KeyValuePair<ulong, Token> unresolved in codeUnit.unresolved)
         {
-            if (codeUnit.labels.TryGetValue(unresolved.Value.text, out long value)) {
+            if (codeUnit.labels.TryGetValue(unresolved.Value.text, out ulong value)) {
                 Inst inst = codeUnit.insts[(int)unresolved.Key];
                 inst.operand = new Word(value);
                 codeUnit.insts[(int)unresolved.Key] = inst;
@@ -96,10 +96,11 @@ class Parser
             Match(TokenType.RBRACKET);
             Token label = Match(TokenType.IDENTIFIER);
             Match(TokenType.COLON);
+            // Parsing with int to prevent the Overflow Exception
             int poolValue = int.Parse(intToken.text);
-            int labelValue = codeUnit.insts.Count;
+            uint labelValue = Convert.ToUInt32(codeUnit.insts.Count);
 
-            codeUnit.pool.Add(new Word(labelValue + codeUnit.addressOffset), poolValue);
+            codeUnit.pool.Add(new Word(labelValue + codeUnit.addressOffset), (ushort)poolValue);
             codeUnit.labels.Add(label.text, labelValue + codeUnit.addressOffset);
 
             return ParseInst();
@@ -114,11 +115,11 @@ class Parser
             if (current.type == TokenType.INT)
             {
                 Token intToken = Match(TokenType.INT);
-                int intValue = int.Parse(intToken.text);
+                uint intValue = uint.Parse(intToken.text);
                 codeUnit.labels.Add(label.text, intValue);
                 return ParseInst();
             }
-            int labelValue = codeUnit.insts.Count;
+            uint labelValue = Convert.ToUInt32(codeUnit.insts.Count);
             codeUnit.labels.Add(label.text, labelValue + codeUnit.addressOffset);
             return ParseInst();
         }
@@ -130,10 +131,10 @@ class Parser
                 return new Inst(opcode, new Word(long.Parse(intToken.text)));
             } else {
                 Token labelToken = Match(TokenType.IDENTIFIER);
-                if (codeUnit.labels.TryGetValue(labelToken.text, out long value)) {
+                if (codeUnit.labels.TryGetValue(labelToken.text, out ulong value)) {
                     return new Inst(opcode, new Word(value));
                 }
-                codeUnit.unresolved.Add(codeUnit.insts.Count, labelToken);
+                codeUnit.unresolved.Add(Convert.ToUInt64(codeUnit.insts.Count), labelToken);
             }
         }
 
