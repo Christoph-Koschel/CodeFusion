@@ -1,6 +1,3 @@
-using System.Diagnostics;
-using System.IO;
-
 namespace CodeFusion.ASM.Lexing;
 
 public class Lexer

@@ -1,5 +1,4 @@
-﻿using System;
-using CodeFusion.ASM.Parsing;
+﻿using CodeFusion.ASM.Parsing;
 
 namespace CodeFusion.ASM;
 
