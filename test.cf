@@ -1,0 +1,6 @@
+[8] main:
+    mallocpool main
+    push myvar
+    freepool
+
+myvar: 50
