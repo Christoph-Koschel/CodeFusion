@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using CodeFusion.ASM.Lexing;
 using CodeFusion.VM;
@@ -36,7 +37,7 @@ class Parser
 
     private Token Peek(int offset = 0)
     {
-        return position + offset >= tokens.Length ? tokens[^-1] : tokens[position + offset];
+        return position + offset >= tokens.Length ? tokens[tokens.Length - 1] : tokens[position + offset];
     }
 
     private Token current => Peek();
@@ -59,15 +60,19 @@ class Parser
 
     public CodeUnit ParseUnit(long addressOffset)
     {
-        codeUnit = new CodeUnit();
+        codeUnit = new CodeUnit(source, addressOffset);
 
         while(!atEnd) {
-            codeUnit.insts.Add(ParseInst());
+            Inst inst = ParseInst();
+            if (inst.opcode != Opcode.NOP)
+            {
+                codeUnit.insts.Add(inst);
+            }
         }
 
-        foreach (KeyValuePair<long, string> unresolved in codeUnit.unresolved)
+        foreach (KeyValuePair<long, Token> unresolved in codeUnit.unresolved)
         {
-            if (codeUnit.labels.TryGetValue(unresolved.Value, out long value)) {
+            if (codeUnit.labels.TryGetValue(unresolved.Value.text, out long value)) {
                 Inst inst = codeUnit.insts[(int)unresolved.Key];
                 inst.operand = new Word(value);
                 codeUnit.insts[(int)unresolved.Key] = inst;
@@ -80,6 +85,10 @@ class Parser
 
     private Inst ParseInst()
     {
+        if (atEnd) {
+            return new Inst(Opcode.NOP);
+        }
+
         if (current.type == TokenType.LBRACKET)
         {
             Match(TokenType.LBRACKET);
@@ -100,6 +109,7 @@ class Parser
         {
             Token label = Match(TokenType.IDENTIFIER);
             Match(TokenType.COLON);
+
 
             if (current.type == TokenType.INT)
             {
@@ -123,7 +133,7 @@ class Parser
                 if (codeUnit.labels.TryGetValue(labelToken.text, out long value)) {
                     return new Inst(opcode, new Word(value));
                 }
-                codeUnit.unresolved.Add(codeUnit.insts.Count, labelToken.text);
+                codeUnit.unresolved.Add(codeUnit.insts.Count, labelToken);
             }
         }
 
@@ -164,7 +174,7 @@ class Parser
                 return Opcode.STORE_ARRAY;
         }
 
-        Report.PrintReport(source, token, $"Undefined opcode '{token.text}'");
+        Report.PrintReport(source, token, $"Undefined instruction '{token.text}'");
         return 0;
     }
 }
