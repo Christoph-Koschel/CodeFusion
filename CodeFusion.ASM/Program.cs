@@ -14,10 +14,14 @@ class Program {
         string ENTRY_POINT = "entry";
         string OUTPUT = @"C:\Users\kosch\Desktop\Workbench\CodeFusion\test.bin";
 
+        CompileASM(TMP_PATHS, OUTPUT, ENTRY_POINT);
+    }
+
+    private static void CompileASM(string[] paths, string output, string entryPointLabel) {
         ulong addressOffset = 0;
         List<CodeUnit> units = new List<CodeUnit>();
-        foreach(string TMP_PATH in TMP_PATHS) {
-            Parser parser = new Parser(TMP_PATH);
+        foreach(string path in paths) {
+            Parser parser = new Parser(path);
             CodeUnit unit = parser.ParseUnit(addressOffset);
             addressOffset += Convert.ToUInt32(unit.insts.Count);
             units.Add(unit);
@@ -50,7 +54,7 @@ class Program {
                 pool.Add(item.Key, item.Value);
             }
 
-            if (unit.labels.TryGetValue(ENTRY_POINT, out ulong value)) {
+            if (unit.labels.TryGetValue(entryPointLabel, out ulong value)) {
                 entryPoint = value;
             }
         }
@@ -65,7 +69,7 @@ class Program {
 
         if (!Report.sentErros) {
             Compiler compiler = new Compiler(insts.ToArray(), pool, entryPoint);
-            BinaryWriter writer = new BinaryWriter(new FileStream(OUTPUT, FileMode.OpenOrCreate));
+            BinaryWriter writer = new BinaryWriter(new FileStream(output, FileMode.OpenOrCreate));
             compiler.WriteTo(writer);
             writer.Close();
         }
