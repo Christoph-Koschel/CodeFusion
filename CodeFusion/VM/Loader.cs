@@ -32,6 +32,11 @@ public class Loader
             Environment.Exit(1);
         }
 
+        if ((meta.flags & Metadata.EXECUTABLE) != Metadata.EXECUTABLE) {
+            Console.Error.WriteLine("Program is not executable");
+            Environment.Exit(1);
+        }
+
         cf.programCounter = meta.entryPoint;
 
         ulong i;
