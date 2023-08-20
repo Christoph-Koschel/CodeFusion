@@ -116,7 +116,7 @@ class Parser
             {
                 Token intToken = Match(TokenType.INT);
                 uint intValue = uint.Parse(intToken.text);
-                codeUnit.labels.Add(label.text, intValue);
+                codeUnit.variables.Add(label.text, intValue);
                 return ParseInst();
             }
             uint labelValue = Convert.ToUInt32(codeUnit.insts.Count);
@@ -132,6 +132,10 @@ class Parser
             } else {
                 Token labelToken = Match(TokenType.IDENTIFIER);
                 if (codeUnit.labels.TryGetValue(labelToken.text, out ulong value)) {
+                    codeUnit.lookups.Add(codeUnit.addressOffset + Convert.ToUInt32(codeUnit.insts.Count));
+                    return new Inst(opcode, new Word(value));
+                }
+                if (codeUnit.variables.TryGetValue(labelToken.text, out value)) {
                     return new Inst(opcode, new Word(value));
                 }
                 codeUnit.unresolved.Add(Convert.ToUInt64(codeUnit.insts.Count), labelToken);

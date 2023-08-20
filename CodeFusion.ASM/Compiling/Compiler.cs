@@ -18,14 +18,7 @@ public class Compiler
         this.entryPoint = entryPoint;
     }
 
-    public void WriteTo(BinaryWriter writer)
-    {
-        WriteHeader(ref writer);
-        WritePool(ref writer);
-        WriteProgram(ref writer);
-    }
-
-    private void WriteHeader(ref BinaryWriter writer)
+    public void WriteHeader(ref BinaryWriter writer, ushort flags)
     {
         ulong size = 0;
         foreach (Inst[] insts in this.insts)
@@ -37,12 +30,19 @@ public class Compiler
         writer.Write((byte)'C');
         writer.Write((byte)'F');
         writer.Write(Metadata.CURRENT_VERSION);
+        writer.Write(flags);
         writer.Write(entryPoint);
         writer.Write((ushort)pool.Count);
         writer.Write(size);
     }
 
-    private void WritePool(ref BinaryWriter writer)
+    public void WriteRelocatableHeader(ref BinaryWriter writer, ushort symbolCount, ushort missingCount, ushort addressCount) {
+        writer.Write(symbolCount);
+        writer.Write(missingCount);
+        writer.Write(addressCount);
+    }
+
+    public void WritePool(ref BinaryWriter writer)
     {
         foreach (KeyValuePair<Word, ushort> item in pool)
         {
@@ -51,7 +51,7 @@ public class Compiler
         }
     }
 
-    private void WriteProgram(ref BinaryWriter writer)
+    public void WriteProgram(ref BinaryWriter writer)
     {
         foreach (Inst[] insts in this.insts)
         {
@@ -86,6 +86,25 @@ public class Compiler
                     writer.Write(operand[j]);
                 }
             }
+        }
+    }
+
+    internal void WriteSymbols(ref BinaryWriter writer, Dictionary<string, ulong> labels)
+    {
+        foreach (KeyValuePair<string, ulong> label in labels)
+        {
+            foreach(char c in label.Key) {
+                writer.Write((byte)c);
+            }
+            writer.Write((byte)0);
+            writer.Write(label.Value);
+        }
+    }
+
+    internal void WriteAddresses(ref BinaryWriter writer, ulong[] addresses)
+    {
+        foreach(ulong address in addresses) {
+            writer.Write(address);
         }
     }
 }

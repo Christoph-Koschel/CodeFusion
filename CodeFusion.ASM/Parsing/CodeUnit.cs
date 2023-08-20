@@ -9,8 +9,10 @@ public struct CodeUnit
     public readonly SourceFile source;
     public readonly List<Inst> insts;
     public readonly Dictionary<string, ulong> labels;
+    public readonly Dictionary<string, ulong> variables;
     public readonly Dictionary<ulong, Token> unresolved;
     public readonly Dictionary<Word, ushort> pool;
+    public readonly List<ulong> lookups;
     public readonly ulong addressOffset;
 
     public CodeUnit(SourceFile source, ulong addressOffset)
@@ -18,8 +20,10 @@ public struct CodeUnit
         this.source = source;
         this.insts = new List<Inst>();
         this.labels = new Dictionary<string, ulong>();
+        this.variables = new Dictionary<string, ulong>();
         this.unresolved = new Dictionary<ulong, Token>();
         this.pool = new Dictionary<Word, ushort>();
+        this.lookups = new List<ulong>();
         this.addressOffset = addressOffset;
     }
 }
