@@ -9,5 +9,7 @@
         <TargetFramework>net6.0</TargetFramework>
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     </PropertyGroup>
-
+    <ItemGroup>
+        <ProjectReference Include="../CodeFusion/CodeFusion.csproj" />
+    </ItemGroup>
 </Project>
