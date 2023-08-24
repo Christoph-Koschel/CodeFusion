@@ -5,9 +5,8 @@ namespace CodeFusion.VM;
 
 public class Loader
 {
-    public static void LoadFile(ref VmCodeFusion cf, string path)
+    public static Metadata ReadMainHeader(ref BinaryReader reader)
     {
-        BinaryReader reader = new BinaryReader(new FileStream(path, FileMode.Open));
         byte[] metadata = reader.ReadBytes(Metadata.METADATA_SIZE);
         Metadata meta = new Metadata
         {
@@ -31,8 +30,28 @@ public class Loader
             Console.Error.WriteLine($"Program is not compatible with the VM file expect '{meta.version}' VM has '{Metadata.CURRENT_VERSION}'");
             Environment.Exit(1);
         }
+        return meta;
+    }
 
-        if ((meta.flags & Metadata.EXECUTABLE) != Metadata.EXECUTABLE) {
+    public static RelocatableMetadata ReadRelocatableHeader(ref BinaryReader reader)
+    {
+        byte[] metadata = reader.ReadBytes(RelocatableMetadata.METADATA_SIZE);
+        RelocatableMetadata meta = new RelocatableMetadata
+        {
+            symbolCount = BitConverter.ToUInt16(metadata, RelocatableMetadata.SYMBOL_OFFSET),
+            missingCount = BitConverter.ToUInt16(metadata, RelocatableMetadata.MISSING_OFFSET),
+            addressCount = BitConverter.ToUInt16(metadata, RelocatableMetadata.ADDRESS_OFFSET)
+        };
+        return meta;
+    }
+
+    public static void LoadFile(ref VmCodeFusion cf, string path)
+    {
+        BinaryReader reader = new BinaryReader(new FileStream(path, FileMode.Open));
+        Metadata meta = ReadMainHeader(ref reader);
+
+        if ((meta.flags & Metadata.EXECUTABLE) != Metadata.EXECUTABLE)
+        {
             Console.Error.WriteLine("Program is not executable");
             Environment.Exit(1);
         }

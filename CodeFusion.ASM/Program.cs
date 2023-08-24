@@ -76,8 +76,8 @@ class Program
 
         foreach (string path in Options.INSTANCE.files)
         {
-            Compiling.Loader loader = new Compiling.Loader(path);
-            Metadata meta = loader.ReadHeader();
+            BinaryReader reader = new BinaryReader(new FileStream(path,FileMode.Open));
+            Metadata meta = Loader.ReadMainHeader(ref reader);
             if (meta.magic[0] != '.' || meta.magic[1] != 'C' || meta.magic[2] != 'F')
             {
                 Report.PrintReport(path, "File has not the correct file format");
@@ -96,7 +96,7 @@ class Program
                 continue;
             }
 
-            RelocatableMetadata relocatable = loader.ReadRelocatableHeader();
+            RelocatableMetadata relocatable = Loader.ReadRelocatableHeader(ref reader);
             ObjectUnit unit = new ObjectUnit();
 
             for (int i = 0; i < relocatable.symbolCount; i++)
@@ -105,12 +105,12 @@ class Program
                 string name = "";
                 do
                 {
-                    b = loader.reader.ReadByte();
+                    b = reader.ReadByte();
                     if (b != 0) {
                         name += (char)b;
                     }
                 } while (b != 0);
-                unit.labels.Add(name, BitConverter.ToUInt64(loader.reader.ReadBytes(8)));
+                unit.labels.Add(name, BitConverter.ToUInt64(reader.ReadBytes(8)));
             }
             
             for (int i = 0; i < relocatable.missingCount; i++)
@@ -119,35 +119,35 @@ class Program
                 string name = "";
                 do
                 {
-                    b = loader.reader.ReadByte();
+                    b = reader.ReadByte();
                     if (b != 0) {
                         name += (char)b;
                     }
                 } while (b != 0);
 
-                unit.unresolved.Add(BitConverter.ToUInt64(loader.reader.ReadBytes(8)), name);
+                unit.unresolved.Add(BitConverter.ToUInt64(reader.ReadBytes(8)), name);
             }
 
             for (int i = 0; i < relocatable.addressCount; i++)
             {
-                unit.addresses.Add(BitConverter.ToUInt64(loader.reader.ReadBytes(8)));
+                unit.addresses.Add(BitConverter.ToUInt64(reader.ReadBytes(8)));
             }
 
             for (int i = 0; i < meta.poolSize; i++)
             {
-                unit.pool.Add(new Word(BitConverter.ToUInt64(loader.reader.ReadBytes(8))), BitConverter.ToUInt16(loader.reader.ReadBytes(2)));
+                unit.pool.Add(new Word(BitConverter.ToUInt64(reader.ReadBytes(8))), BitConverter.ToUInt16(reader.ReadBytes(2)));
             }
 
             for (ulong i = 0; i < meta.programSize; i++)
             {
-                byte opcode = loader.reader.ReadByte();
+                byte opcode = reader.ReadByte();
                 if (!Opcode.HasOperand(opcode))
                 {
                     unit.insts.Add(new Inst(opcode));
                     continue;
                 }
 
-                byte size = loader.reader.ReadByte();
+                byte size = reader.ReadByte();
                 if (size == 0)
                 {
                     unit.insts.Add(new Inst(opcode));
@@ -157,12 +157,14 @@ class Program
                 byte[] bytes = new byte[8];
                 for (int j = 0; j < size; j++)
                 {
-                    bytes[j] = loader.reader.ReadByte();
+                    bytes[j] = reader.ReadByte();
                 }
                 unit.insts.Add(new Inst(opcode, new Word(BitConverter.ToUInt64(bytes))));
             }
 
             units.Add(unit);
+            reader.Close();
+            reader.Dispose();
         }
 
         return units.ToArray();
