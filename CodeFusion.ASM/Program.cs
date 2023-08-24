@@ -311,14 +311,6 @@ class Program
             }
         }
 
-        foreach (CodeUnit unit in units)
-        {
-            foreach (Inst inst in unit.insts)
-            {
-                Console.WriteLine("{0, -10} {1}", Opcode.GetOpcodeName(inst.opcode), inst.operand.asU64);
-            }
-        }
-
         if (!Report.sentErros)
         {
             Compiler compiler = new Compiler(insts.ToArray(), pool, entryPoint);

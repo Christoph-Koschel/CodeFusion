@@ -126,41 +126,4 @@ public static class Opcode
                 return false;
         }
     }
-
-    public static string GetOpcodeName(byte opcode)
-    {
-        switch (opcode)
-        {
-            case NOP:
-                return "nop";
-            case PUSH:
-                return "push";
-            case POP:
-                return "pop";
-            case LOAD:
-                return "load";
-            case STORE:
-                return "store";
-            case MALLOC_POOL:
-                return "mallocpool";
-            case FREE_POOL:
-                return "freepool";
-            case PUSH_PTR:
-                return "pushptr";
-            case LOAD_PTR:
-                return "loadptr";
-            case STORE_PTR:
-                return "storeptr";
-            case DUP:
-                return "dup";
-            case PUSH_ARRAY:
-                return "pusharray";
-            case LOAD_ARRAY:
-                return "loadarray";
-            case STORE_ARRAY:
-                return "storearray";
-        }
-
-        return "<UNDEFINED>";
-    }
 }
