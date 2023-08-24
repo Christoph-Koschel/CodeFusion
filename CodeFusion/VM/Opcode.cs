@@ -2,6 +2,10 @@
 
 public static class Opcode
 {
+    /// <summary>
+    /// nop<br /><br />
+    /// No Operation
+    /// </summary>
     public const byte NOP = 0;
 
     /// <summary>
@@ -19,48 +23,100 @@ public static class Opcode
     /// <summary>
     /// load &lt;offset><br /><br />
     /// Loads the value with the offset as operand and the size on top of the stack from the current pool
+    ///
+    /// <code>
+    ///     push 4 ; Pushes the size
+    ///     load 0 ; Load the value stored in 4 Bytes at the pool offset 0
+    /// </code>
     /// </summary>
     public const byte LOAD = 3;
 
     /// <summary>
     /// store &lt;offset><br /><br />
     /// Stores a value and its size on top of the stack with the offset as operand in the current pool
+    ///
+    /// <code>
+    ///     push 40 ; Pushes the value
+    ///     push 4 ; Pushes the size (4 Bytes aka. Int)
+    ///     store 0 ; Store the value in 4 Bytes at the pool offset 0
+    /// </code>
     /// </summary>
     public const byte STORE = 4;
 
     /// <summary>
     /// mallocpool &lt;address><br /><br />
     /// Allocates memory for the function address, where the size is defined in the pool HashTable
+    ///
+    /// <code>
+    ///     [12] entry:
+    ///         mallocpool entry ; Malloc a pool of 12 Bytes
+    ///         freepool ; Frees the latest pool
+    /// </code>
     /// </summary>
     public const byte MALLOC_POOL = 5;
 
     /// <summary>
     /// freepool<br /><br />
     /// Frees the last pool of the poolstack
+    ///
+    /// <code>
+    ///     [12] entry:
+    ///         mallocpool entry ; Malloc a pool of 12 Bytes
+    ///         freepool ; Frees the latest pool
+    /// </code>
     /// </summary>
     public const byte FREE_POOL = 6;
 
     /// <summary>
     /// pushptr &lt;offset><br /><br />
     /// Pushes a new ptr on top of the stack that's directing to the pool + offset byte
+    /// 
+    /// <code>
+    /// ; Create a new PTR
+    /// pushptr 0
+    /// </code>
     /// </summary>
     public const byte PUSH_PTR = 7;
 
     /// <summary>
     /// loadptr &lt;size><br /><br />
-    /// Loads the value from the ptr on top of the stack behind a ptr with its given size
+    /// Loads the value from the ptr on top of the stack behind a ptr with its index with its given size
+    /// 
+    /// <code>
+    ///     ; Create a new PTR
+    ///     pushptr 0
+    ///     ; Pushes index
+    ///     push 0
+    ///     ; Load a value
+    ///     loadptr 4
+    /// </code>
     /// </summary>
     public const byte LOAD_PTR = 8;
 
     /// <summary>
     /// storeptr &lt;size><br /><br />
     /// Stores a value behind a ptr with its given size
+    ///
+    /// <code>
+    ///     ; Creates a new PTR
+    ///     pushptr 0
+    ///     ; Pushes the value
+    ///     push 40
+    ///     ; Store the value
+    ///     storeptr 4
+    /// </code>
     /// </summary>
     public const byte STORE_PTR = 9;
 
     /// <summary>
     /// dup &lt;offset><br /><br />
     /// Duplicates a value of the stack. Zero duplicates the top value
+    ///  
+    /// <code>  
+    ///     push 40
+    ///     ; Dupplicate the top value
+    ///     dup 0
+    /// </code>
     /// </summary>
     public const byte DUP = 10;
 
