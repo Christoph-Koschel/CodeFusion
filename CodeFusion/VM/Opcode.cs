@@ -1,5 +1,7 @@
 ﻿namespace CodeFusion.VM;
 
+// TODO improve Opcode docuemtation
+
 public static class Opcode
 {
     /// <summary>
