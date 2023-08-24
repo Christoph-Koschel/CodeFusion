@@ -115,6 +115,150 @@ public class Runner
                 WritePtr(cf.stack[cf.stackSize - 3].asPtr, cf.stack[cf.stackSize - 2], cf.stack[cf.stackSize - 1], inst.operand);
                 cf.stackSize -= 3;
                 return Error.OK;
+            case Opcode.IADD:
+                if (cf.stackSize < 2)
+                {
+                    return Error.STACK_UNDERFLOW;
+                }
+                cf.stack[cf.stackSize - 2] = new Word(cf.stack[cf.stackSize - 2].asI64 + cf.stack[cf.stackSize - 1].asI64);
+                cf.stackSize--;
+                return Error.OK;
+            case Opcode.FADD:
+                if (cf.stackSize < 2)
+                {
+                    return Error.STACK_UNDERFLOW;
+                }
+                cf.stack[cf.stackSize - 2] = new Word(cf.stack[cf.stackSize - 2].asF64 + cf.stack[cf.stackSize - 1].asF64);
+                cf.stackSize--;
+                return Error.OK;
+            case Opcode.UADD:
+                if (cf.stackSize < 2)
+                {
+                    return Error.STACK_UNDERFLOW;
+                }
+                cf.stack[cf.stackSize - 2] = new Word(cf.stack[cf.stackSize - 2].asU64 + cf.stack[cf.stackSize - 1].asU64);
+                cf.stackSize--;
+                return Error.OK;
+            case Opcode.ISUB:
+                if (cf.stackSize < 2)
+                {
+                    return Error.STACK_UNDERFLOW;
+                }
+                cf.stack[cf.stackSize - 2] = new Word(cf.stack[cf.stackSize - 2].asI64 - cf.stack[cf.stackSize - 1].asI64);
+                cf.stackSize--;
+                return Error.OK;
+            case Opcode.FSUB:
+                if (cf.stackSize < 2)
+                {
+                    return Error.STACK_UNDERFLOW;
+                }
+                cf.stack[cf.stackSize - 2] = new Word(cf.stack[cf.stackSize - 2].asF64 - cf.stack[cf.stackSize - 1].asF64);
+                cf.stackSize--;
+                return Error.OK;
+            case Opcode.USUB:
+                if (cf.stackSize < 2)
+                {
+                    return Error.STACK_UNDERFLOW;
+                }
+                cf.stack[cf.stackSize - 2] = new Word(cf.stack[cf.stackSize - 2].asU64 - cf.stack[cf.stackSize - 1].asU64);
+                cf.stackSize--;
+                return Error.OK;
+            case Opcode.IMUL:
+                if (cf.stackSize < 2)
+                {
+                    return Error.STACK_UNDERFLOW;
+                }
+                cf.stack[cf.stackSize - 2] = new Word(cf.stack[cf.stackSize - 2].asI64 * cf.stack[cf.stackSize - 1].asI64);
+                cf.stackSize--;
+                return Error.OK;
+            case Opcode.FMUL:
+                if (cf.stackSize < 2)
+                {
+                    return Error.STACK_UNDERFLOW;
+                }
+                cf.stack[cf.stackSize - 2] = new Word(cf.stack[cf.stackSize - 2].asF64 * cf.stack[cf.stackSize - 1].asF64);
+                cf.stackSize--;
+                return Error.OK;
+            case Opcode.UMUL:
+                if (cf.stackSize < 2)
+                {
+                    return Error.STACK_UNDERFLOW;
+                }
+                cf.stack[cf.stackSize - 2] = new Word(cf.stack[cf.stackSize - 2].asU64 + cf.stack[cf.stackSize - 1].asU64);
+                cf.stackSize--;
+                return Error.OK;
+            case Opcode.IDIV:
+                if (cf.stackSize < 2)
+                {
+                    return Error.STACK_UNDERFLOW;
+                }
+                if (cf.stack[cf.stackSize - 1].asI64 == 0)
+                {
+                    return Error.DIVISON_BY_ZERO;
+                }
+                cf.stack[cf.stackSize - 2] = new Word(cf.stack[cf.stackSize - 2].asI64 / cf.stack[cf.stackSize - 1].asI64);
+                cf.stackSize--;
+                return Error.OK;
+            case Opcode.FDIV:
+                if (cf.stackSize < 2)
+                {
+                    return Error.STACK_UNDERFLOW;
+                }
+                if (cf.stack[cf.stackSize - 1].asF64 == 0)
+                {
+                    return Error.DIVISON_BY_ZERO;
+                }
+                cf.stack[cf.stackSize - 2] = new Word(cf.stack[cf.stackSize - 2].asF64 / cf.stack[cf.stackSize - 1].asF64);
+                cf.stackSize--;
+                return Error.OK;
+            case Opcode.UDIV:
+                if (cf.stackSize < 2)
+                {
+                    return Error.STACK_UNDERFLOW;
+                }
+                if (cf.stack[cf.stackSize - 1].asU64 == 0)
+                {
+                    return Error.DIVISON_BY_ZERO;
+                }
+                cf.stack[cf.stackSize - 2] = new Word(cf.stack[cf.stackSize - 2].asU64 / cf.stack[cf.stackSize - 1].asU64);
+                cf.stackSize--;
+                return Error.OK;
+            case Opcode.IMOD:
+                if (cf.stackSize < 2)
+                {
+                    return Error.STACK_UNDERFLOW;
+                }
+                if (cf.stack[cf.stackSize - 1].asI64 == 0)
+                {
+                    return Error.DIVISON_BY_ZERO;
+                }
+                cf.stack[cf.stackSize - 2] = new Word(cf.stack[cf.stackSize - 2].asI64 % cf.stack[cf.stackSize - 1].asI64);
+                cf.stackSize--;
+                return Error.OK;
+            case Opcode.FMOD:
+                if (cf.stackSize < 2)
+                {
+                    return Error.STACK_UNDERFLOW;
+                }
+                if (cf.stack[cf.stackSize - 1].asF64 == 0)
+                {
+                    return Error.DIVISON_BY_ZERO;
+                }
+                cf.stack[cf.stackSize - 2] = new Word(cf.stack[cf.stackSize - 2].asF64 % cf.stack[cf.stackSize - 1].asF64);
+                cf.stackSize--;
+                return Error.OK;
+            case Opcode.UMOD:
+                if (cf.stackSize < 2)
+                {
+                    return Error.STACK_UNDERFLOW;
+                }
+                if (cf.stack[cf.stackSize - 1].asU64 == 0)
+                {
+                    return Error.DIVISON_BY_ZERO;
+                }
+                cf.stack[cf.stackSize - 2] = new Word(cf.stack[cf.stackSize - 2].asU64 % cf.stack[cf.stackSize - 1].asU64);
+                cf.stackSize--;
+                return Error.OK;
         }
 
         return Error.ILLEGAL_OPCODE;

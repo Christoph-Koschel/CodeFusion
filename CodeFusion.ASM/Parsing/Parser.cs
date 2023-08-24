@@ -62,7 +62,8 @@ class Parser
     {
         codeUnit = new CodeUnit(source, addressOffset);
 
-        while(!atEnd) {
+        while (!atEnd)
+        {
             Inst inst = ParseInst();
             if (inst.opcode != Opcode.NOP)
             {
@@ -72,7 +73,8 @@ class Parser
 
         foreach (KeyValuePair<ulong, Token> unresolved in codeUnit.unresolved)
         {
-            if (codeUnit.labels.TryGetValue(unresolved.Value.text, out ulong value)) {
+            if (codeUnit.labels.TryGetValue(unresolved.Value.text, out ulong value))
+            {
                 Inst inst = codeUnit.insts[(int)unresolved.Key];
                 inst.operand = new Word(value);
                 codeUnit.insts[(int)unresolved.Key] = inst;
@@ -85,7 +87,8 @@ class Parser
 
     private Inst ParseInst()
     {
-        if (atEnd) {
+        if (atEnd)
+        {
             return new Inst(Opcode.NOP);
         }
 
@@ -125,17 +128,23 @@ class Parser
         }
 
         byte opcode = GetOpcode(Match(TokenType.IDENTIFIER));
-        if(Opcode.HasOperand(opcode)) {
-            if (current.type == TokenType.INT) {
+        if (Opcode.HasOperand(opcode))
+        {
+            if (current.type == TokenType.INT)
+            {
                 Token intToken = Match(TokenType.INT);
                 return new Inst(opcode, new Word(long.Parse(intToken.text)));
-            } else {
+            }
+            else
+            {
                 Token labelToken = Match(TokenType.IDENTIFIER);
-                if (codeUnit.labels.TryGetValue(labelToken.text, out ulong value)) {
+                if (codeUnit.labels.TryGetValue(labelToken.text, out ulong value))
+                {
                     codeUnit.lookups.Add(codeUnit.addressOffset + Convert.ToUInt32(codeUnit.insts.Count));
                     return new Inst(opcode, new Word(value));
                 }
-                if (codeUnit.variables.TryGetValue(labelToken.text, out value)) {
+                if (codeUnit.variables.TryGetValue(labelToken.text, out value))
+                {
                     return new Inst(opcode, new Word(value));
                 }
                 codeUnit.unresolved.Add(Convert.ToUInt64(codeUnit.insts.Count), labelToken);
@@ -177,6 +186,37 @@ class Parser
                 return Opcode.LOAD_ARRAY;
             case "storearray":
                 return Opcode.STORE_ARRAY;
+            case "iadd":
+                return Opcode.IADD;
+            case "fadd":
+                return Opcode.FADD;
+            case "uadd":
+                return Opcode.UADD;
+            case "isub":
+                return Opcode.ISUB;
+            case "fsub":
+                return Opcode.FSUB;
+            case "usub":
+                return Opcode.USUB;
+            case "imul":
+                return Opcode.IMUL;
+            case "fmul":
+                return Opcode.FMUL;
+            case "umul":
+                return Opcode.UMUL;
+            case "idiv":
+                return Opcode.IDIV;
+            case "fdiv":
+                return Opcode.FDIV;
+            case "udiv":
+                return Opcode.UDIV;
+            case "imod":
+                return Opcode.IMOD;
+            case "fmod":
+                return Opcode.FMOD;
+            case "umod":
+                return Opcode.UMOD;
+
         }
 
         Report.PrintReport(source, token, $"Undefined instruction '{token.text}'");

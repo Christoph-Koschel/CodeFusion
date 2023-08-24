@@ -163,6 +163,26 @@ public static class Opcode
     /// </summary>
     public const byte STORE_ARRAY = 13;
 
+    public const byte IADD = 14;
+    public const byte FADD = 15;
+    public const byte UADD = 16;
+
+    public const byte ISUB = 17;
+    public const byte FSUB = 18;
+    public const byte USUB = 19;
+
+    public const byte IMUL = 20;
+    public const byte FMUL = 21;
+    public const byte UMUL = 22;
+
+    public const byte IDIV = 23;
+    public const byte FDIV = 24;
+    public const byte UDIV = 25;
+
+    public const byte IMOD = 26;
+    public const byte FMOD = 27;
+    public const byte UMOD = 28;
+
     public static bool HasOperand(byte opcode)
     {
         switch (opcode)

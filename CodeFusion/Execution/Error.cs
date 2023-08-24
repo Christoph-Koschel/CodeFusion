@@ -7,4 +7,5 @@ public enum Error
     ILLEGAL_ACCESS,
     STACK_UNDERFLOW,
     STACK_OVERFLOW,
+    DIVISON_BY_ZERO
 }

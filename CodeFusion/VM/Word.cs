@@ -14,10 +14,16 @@ public unsafe struct Word
     {
         this.value = Convert.ToUInt64(value);
     }
+
+    public Word(double value) {
+        this.value = BitConverter.ToUInt64(BitConverter.GetBytes(value), 0);
+    }
+
     public Word(void* value)
     {
         this.value = (ulong)value;
     }
+
 
 
     public static Word operator +(Word one, Word other)
