@@ -19,9 +19,9 @@ public struct Metadata
 
     #region FLAGS
 
-    public const byte RELOCATABLE = 0b1;
-    public const byte EXECUTABLE = 0b01;
-    public const byte CONTAINS_ERRORS = 0b001;
+    public const byte RELOCATABLE = 01;
+    public const byte EXECUTABLE = 0b10;
+    public const byte CONTAINS_ERRORS = 0b100;
     
     #endregion
 }
