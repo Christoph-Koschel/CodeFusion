@@ -40,11 +40,20 @@ class Program
 
         Options.INSTANCE.files = files.ToArray();
 
+        if (Options.INSTANCE.files.Length  < 1) {
+            Console.ForegroundColor = ConsoleColor.DarkRed;
+            Console.Error.WriteLine("No files given");
+            Environment.Exit(1);
+        }
+
         if (Options.INSTANCE.combine)
         {
-            if (Options.INSTANCE.relocatable) {
+            if (Options.INSTANCE.relocatable)
+            {
                 CombineObjs();
-            } else {
+            }
+            else
+            {
                 CombineObjsToExecutable();
             }
         }
@@ -61,14 +70,177 @@ class Program
         }
     }
 
+    private static ObjectUnit[] CreateObjectUnits()
+    {
+        List<ObjectUnit> units = new List<ObjectUnit>();
+
+        foreach (string path in Options.INSTANCE.files)
+        {
+            Compiling.Loader loader = new Compiling.Loader(path);
+            Metadata meta = loader.ReadHeader();
+            if (meta.magic[0] != '.' || meta.magic[1] != 'C' || meta.magic[2] != 'F')
+            {
+                Report.PrintReport(path, "File has not the correct file format");
+                continue;
+            }
+
+            if (meta.version != Metadata.CURRENT_VERSION)
+            {
+                Report.PrintReport(path, $"Object is not compatible with the VM file expect '{meta.version}' VM has '{Metadata.CURRENT_VERSION}'");
+                continue;
+            }
+            
+            if ((meta.flags & Metadata.RELOCATABLE) != Metadata.RELOCATABLE)
+            {
+                Report.PrintReport(path, "Object is not relocatable");
+                continue;
+            }
+
+            RelocatableMetadata relocatable = loader.ReadRelocatableHeader();
+            ObjectUnit unit = new ObjectUnit();
+
+            for (int i = 0; i < relocatable.symbolCount; i++)
+            {
+                byte b;
+                string name = "";
+                do
+                {
+                    b = loader.reader.ReadByte();
+                    if (b != 0) {
+                        name += (char)b;
+                    }
+                } while (b != 0);
+                unit.labels.Add(name, BitConverter.ToUInt64(loader.reader.ReadBytes(8)));
+            }
+            
+            for (int i = 0; i < relocatable.missingCount; i++)
+            {
+                byte b;
+                string name = "";
+                do
+                {
+                    b = loader.reader.ReadByte();
+                    if (b != 0) {
+                        name += (char)b;
+                    }
+                } while (b != 0);
+
+                unit.unresolved.Add(BitConverter.ToUInt64(loader.reader.ReadBytes(8)), name);
+            }
+
+            for (int i = 0; i < relocatable.addressCount; i++)
+            {
+                unit.addresses.Add(BitConverter.ToUInt64(loader.reader.ReadBytes(8)));
+            }
+
+            for (int i = 0; i < meta.poolSize; i++)
+            {
+                unit.pool.Add(new Word(BitConverter.ToUInt64(loader.reader.ReadBytes(8))), BitConverter.ToUInt16(loader.reader.ReadBytes(2)));
+            }
+
+            for (ulong i = 0; i < meta.programSize; i++)
+            {
+                byte opcode = loader.reader.ReadByte();
+                if (!Opcode.HasOperand(opcode))
+                {
+                    unit.insts.Add(new Inst(opcode));
+                    continue;
+                }
+
+                byte size = loader.reader.ReadByte();
+                if (size == 0)
+                {
+                    unit.insts.Add(new Inst(opcode));
+                    continue;
+                }
+
+                byte[] bytes = new byte[8];
+                for (int j = 0; j < size; j++)
+                {
+                    bytes[j] = loader.reader.ReadByte();
+                }
+                unit.insts.Add(new Inst(opcode, new Word(BitConverter.ToUInt64(bytes))));
+            }
+
+            units.Add(unit);
+        }
+
+        return units.ToArray();
+    }
+
     private static void CombineObjsToExecutable()
     {
-        throw new NotImplementedException();
+        ObjectUnit[] units = CreateObjectUnits();
+
+        if (Report.sentErros) {
+            return;
+        }
+
+        ObjectUnit baseUnit = units[0];
+        
+        if (units.Length > 1)
+        {
+            Combinder combinder = new Combinder();
+
+            for (int i = 1; i < units.Length; i++)
+            {
+                combinder.Combine(ref baseUnit, units[i]);
+            }
+        }
+
+        foreach (KeyValuePair<ulong, string> unresolved in baseUnit.unresolved)
+        {
+            Report.PrintWarning(baseUnit.path, $"WARNING: Unresolved label '{unresolved.Value}'");
+        }
+
+        BinaryWriter writer = new BinaryWriter(new FileStream(Options.INSTANCE.output, FileMode.OpenOrCreate));
+        Compiler compiler = new Compiler(new[] { baseUnit.insts.ToArray() }, baseUnit.pool, 0);
+        compiler.WriteHeader(ref writer, (byte)(Metadata.EXECUTABLE | (baseUnit.unresolved.Count == 0 ? 0 : Metadata.CONTAINS_ERRORS)));
+        compiler.WritePool(ref writer);
+        compiler.WriteProgram(ref writer);
+
+        writer.Close();
     }
 
     private static void CombineObjs()
     {
-        throw new NotImplementedException();
+        ObjectUnit[] units = CreateObjectUnits();
+
+        if (Report.sentErros) {
+            return;
+        }
+
+        if (units.Length < 2)
+        {
+            Report.PrintReport(Options.INSTANCE.files[0], "Need at least two object files");
+            return;
+        }
+
+
+        ObjectUnit baseUnit = units[0];
+        Combinder combinder = new Combinder();
+
+        for (int i = 1; i < units.Length; i++)
+        {
+            combinder.Combine(ref baseUnit, units[i]);
+        }
+
+        foreach (KeyValuePair<ulong, string> unresolved in baseUnit.unresolved)
+        {
+            Report.PrintWarning(baseUnit.path, $"WARNING: Unresolved label '{unresolved.Value}'");
+        }
+
+        BinaryWriter writer = new BinaryWriter(new FileStream(Options.INSTANCE.output, FileMode.OpenOrCreate));
+        Compiler compiler = new Compiler(new[] { baseUnit.insts.ToArray() }, baseUnit.pool, 0);
+        compiler.WriteHeader(ref writer, (byte)(Metadata.RELOCATABLE | (baseUnit.unresolved.Count == 0 ? 0 : Metadata.CONTAINS_ERRORS)));
+        compiler.WriteRelocatableHeader(ref writer, (ushort)baseUnit.labels.Count, (ushort)baseUnit.unresolved.Count, (ushort)baseUnit.addresses.Count);
+        compiler.WriteSymbols(ref writer, baseUnit.labels);
+        compiler.WriteSymbols(ref writer, baseUnit.unresolved);
+        compiler.WriteAddresses(ref writer, baseUnit.addresses.ToArray());
+        compiler.WritePool(ref writer);
+        compiler.WriteProgram(ref writer);
+
+        writer.Close();
     }
 
     private static CodeUnit[] CreateCodeUnits()
@@ -194,7 +366,7 @@ class Program
         {
             Compiler compiler = new Compiler(insts.ToArray(), pool, 0);
             BinaryWriter writer = new BinaryWriter(new FileStream(Options.INSTANCE.output, FileMode.OpenOrCreate));
-            compiler.WriteHeader(ref writer, (ushort)(Metadata.RELOCATABLE | (Report.sentWarning ? Metadata.CONTAINS_ERRORS : 0)));
+            compiler.WriteHeader(ref writer, (byte)(Metadata.RELOCATABLE | (Report.sentWarning ? Metadata.CONTAINS_ERRORS : 0)));
             compiler.WriteRelocatableHeader(ref writer, Convert.ToUInt16(labels.Count), Convert.ToUInt16(missing.Count), Convert.ToUInt16(addresses.Count));
             compiler.WriteSymbols(ref writer, labels);
             compiler.WriteSymbols(ref writer, missing);

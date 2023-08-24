@@ -18,14 +18,13 @@ public class Compiler
         this.entryPoint = entryPoint;
     }
 
-    public void WriteHeader(ref BinaryWriter writer, ushort flags)
+    public void WriteHeader(ref BinaryWriter writer, byte flags)
     {
         ulong size = 0;
         foreach (Inst[] insts in this.insts)
         {
             size += Convert.ToUInt64(insts.Length);
         }
-
         writer.Write((byte)'.');
         writer.Write((byte)'C');
         writer.Write((byte)'F');
@@ -36,7 +35,8 @@ public class Compiler
         writer.Write(size);
     }
 
-    public void WriteRelocatableHeader(ref BinaryWriter writer, ushort symbolCount, ushort missingCount, ushort addressCount) {
+    public void WriteRelocatableHeader(ref BinaryWriter writer, ushort symbolCount, ushort missingCount, ushort addressCount)
+    {
         writer.Write(symbolCount);
         writer.Write(missingCount);
         writer.Write(addressCount);
@@ -89,11 +89,12 @@ public class Compiler
         }
     }
 
-    internal void WriteSymbols(ref BinaryWriter writer, Dictionary<string, ulong> labels)
+    public void WriteSymbols(ref BinaryWriter writer, Dictionary<string, ulong> labels)
     {
         foreach (KeyValuePair<string, ulong> label in labels)
         {
-            foreach(char c in label.Key) {
+            foreach (char c in label.Key)
+            {
                 writer.Write((byte)c);
             }
             writer.Write((byte)0);
@@ -101,9 +102,23 @@ public class Compiler
         }
     }
 
-    internal void WriteAddresses(ref BinaryWriter writer, ulong[] addresses)
+    public void WriteSymbols(ref BinaryWriter writer, Dictionary<ulong, string> labels)
     {
-        foreach(ulong address in addresses) {
+        foreach (KeyValuePair<ulong, string> label in labels)
+        {
+            foreach (char c in label.Value)
+            {
+                writer.Write((byte)c);
+            }
+            writer.Write((byte)0);
+            writer.Write(label.Key);
+        }
+    }
+
+    public void WriteAddresses(ref BinaryWriter writer, ulong[] addresses)
+    {
+        foreach (ulong address in addresses)
+        {
             writer.Write(address);
         }
     }
