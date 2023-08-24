@@ -15,6 +15,7 @@ public class Loader
                 (char)metadata[0], (char)metadata[1], (char)metadata[2]
             },
             version = BitConverter.ToUInt16(metadata, Metadata.VERSION_OFFSET),
+            flags = metadata[Metadata.FLAGS_OFFSET],
             poolSize = BitConverter.ToUInt16(metadata, Metadata.POOL_OFFSET),
             programSize = BitConverter.ToUInt64(metadata, Metadata.PROGRAM_OFFSET)
         };
