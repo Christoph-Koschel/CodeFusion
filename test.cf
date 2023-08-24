@@ -1,6 +1,31 @@
-[8] main:
-    mallocpool main
-    push myvar
+[12] entry:
+    mallocpool entry
+    push 40
+    push 4
+    store 0
+    push 4
+    load 0
+    pop
+    pushptr 0
+    dup 0
+    push 30
+    storeptr 4
+    loadptr 4
+    push 4
+    load 0
+    pop
+    pop
+    push 16
+    pusharray
+    push 8
+    store 4
+    push 8
+    load 4
+    push 0
+    push 64
+    storearray 4
+    push 8
+    load 4
+    push 0
+    loadarray 4
     freepool
-
-myvar: 50
