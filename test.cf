@@ -1,4 +1,11 @@
 [12] entry:
+    push 20
+    push 40
+    iadd
+    push 2
+    imul
+    pop
+
     mallocpool entry
     push 40
     push 4
