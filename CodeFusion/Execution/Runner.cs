@@ -48,14 +48,17 @@ public class Runner
                 cf.stackSize -= 2;
                 return Error.OK;
             case Opcode.MALLOC_POOL:
+                // TODO Return error status when pool stack is full
                 ushort size = (ushort)(cf.addressPool[inst.operand.asU64] ?? 0);
                 Word word = new Word(Marshal.AllocHGlobal(size).ToInt64());
                 cf.poolStack[cf.poolStackSize++] = word;
                 return Error.OK;
             case Opcode.FREE_POOL:
-                Marshal.FreeHGlobal(new IntPtr(cf.poolStack[cf.poolStackSize--].asPtr));
+                // TODO Return error status when pool stack is empty
+                Marshal.FreeHGlobal(new IntPtr(cf.poolStack[--cf.poolStackSize].asPtr));
                 return Error.OK;
             case Opcode.PUSH_PTR:
+                // TODO Return error status when pool stack is empty
                 if (cf.stackSize >= VmCodeFusion.STACK_CAPACITY)
                 {
                     return Error.STACK_OVERFLOW;
