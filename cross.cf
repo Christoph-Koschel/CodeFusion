@@ -1,9 +1,0 @@
-[30] entry:
-    push main
-
-some:
-    push other
-    push stuff
-
-other: 30
-stuff: 10
