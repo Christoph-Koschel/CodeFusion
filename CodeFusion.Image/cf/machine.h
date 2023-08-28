@@ -1,8 +1,10 @@
 #ifndef CF_MACHINE_H
 #define CF_MACHINE_H
+
 #include <inttypes.h>
 #include <stdio.h>
 #include <assert.h>
+#include "hashmap.h"
 
 #define STACK_CAPACITY 1024
 #define PROGRAM_CAPACITY 1024
@@ -16,7 +18,7 @@
 typedef union {
     uint64_t as_u64;
     int64_t as_i64;
-    void* as_ptr;
+    void *as_ptr;
     double as_f64;
 } Word;
 
@@ -37,12 +39,11 @@ typedef struct {
     Word pool_stack[CALLSTACK_CAPACITY];
     uint64_t pool_stack_size;
 
-    // TODO Implement HashTable of pools
-    //      public readonly Hashtable addressPool = new Hashtable();
+    HashMap *address_pool;
 
     uint64_t program_counter;
-    
-} CF_Machine; 
+
+} CF_Machine;
 
 typedef enum {
     STATUS_OK,
@@ -50,9 +51,11 @@ typedef enum {
     STATUS_ILLEGAL_ACCESS,
     STATUS_STACK_UNDERFLOW,
     STATUS_STACK_OVERFLOW,
+    STATUS_CALL_STACK_OVERFLOW,
+    STATUS_CALL_STACK_UNDERFLOW,
     STATUS_DIVISON_BY_ZERO
 } Status;
 
-Status cf_execute_inst(CF_Machine* cf);
+Status cf_execute_inst(CF_Machine *cf);
 
 #endif
