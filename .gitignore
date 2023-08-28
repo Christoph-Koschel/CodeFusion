@@ -16,3 +16,4 @@ out
 CodeFusion.sln.DotSettings.user
 .vscode
 *.bin
+*.o
