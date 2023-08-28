@@ -1,7 +1,30 @@
 
 #include <malloc.h>
+#include <math.h>
 #include "machine.h"
 #include "opcode.h"
+
+#define BINARY_OP(cf, in, out, op)                                                               \
+{                                                                                                \
+    if ((cf)->stack_size < 2) {                                                                  \
+        return STATUS_STACK_UNDERFLOW;                                                           \
+    }                                                                                            \
+    (cf)->stack[(cf)->stack_size - 2].as_##out =                                                 \
+        (cf)->stack[(cf)->stack_size - 2].as_##in op (cf)->stack[(cf)->stack_size - 1].as_##in;  \
+    (cf)->stack_size--;                                                                          \
+    break;                                                                                       \
+}                                                                                                \
+
+#define CAST_OP(cf, from, to, cast)                                                              \
+{                                                                                                \
+    if ((cf)->stack_size < 1) {                                                                  \
+        return STATUS_STACK_UNDERFLOW;                                                           \
+    }                                                                                            \
+    (cf)->stack[(cf)->stack_size - 1].as_##to = cast (cf)->stack[(cf)->stack_size - 1].as_##from;\
+    (cf)->ip++;                                                                                  \
+    break;                                                                                       \
+}
+
 
 static Word read_ptr(void *ptr, Word size) {
     uint64_t result = 0;
@@ -140,6 +163,51 @@ Status cf_execute_inst(CF_Machine *cf) {
                          cf->stack[cf->stack_size - 1], inst.operand);
             cf->stack_size -= 3;
             return STATUS_OK;
+        case INST_IADD: BINARY_OP(cf, i64, i64, +)
+        case INST_FADD: BINARY_OP(cf, f64, f64, +)
+        case INST_UADD: BINARY_OP(cf, u64, u64, +)
+        case INST_ISUB: BINARY_OP(cf, i64, i64, -)
+        case INST_FSUB: BINARY_OP(cf, f64, f64, -)
+        case INST_USUB: BINARY_OP(cf, u64, u64, -)
+        case INST_IMUL: BINARY_OP(cf, i64, i64, *)
+        case INST_FMUL: BINARY_OP(cf, f64, f64, *)
+        case INST_UMUL: BINARY_OP(cf, u64, u64, *)
+        case INST_IDIV:
+            if (cf->stack[cf->stack_size - 1].as_i64 == 0) {
+                return STATUS_DIVISON_BY_ZERO;
+            }
+            BINARY_OP(cf, i64, i64, /)
+        case INST_FDIV:
+            if (cf->stack[cf->stack_size - 1].as_f64 == 0) {
+                return STATUS_DIVISON_BY_ZERO;
+            }
+            BINARY_OP(cf, f64, f64, /)
+        case INST_UDIV:
+            if (cf->stack[cf->stack_size - 1].as_u64 == 0) {
+                return STATUS_DIVISON_BY_ZERO;
+            }
+            BINARY_OP(cf, u64, u64, /)
+        case INST_IMOD:
+            if (cf->stack[cf->stack_size - 1].as_i64 == 0) {
+                return STATUS_DIVISON_BY_ZERO;
+            }
+            BINARY_OP(cf, i64, i64, %)
+        case INST_FMOD:
+            if (cf->stack[cf->stack_size - 1].as_f64 == 0) {
+                return STATUS_DIVISON_BY_ZERO;
+            }
+            {
+                if ((cf)->stack_size < 2) { return STATUS_STACK_UNDERFLOW; }
+                (cf)->stack[(cf)->stack_size - 2].as_f64 =
+                        remainder((cf)->stack[(cf)->stack_size - 2].as_f64, (cf)->stack[(cf)->stack_size - 1].as_f64);
+                (cf)->stack_size--;
+                break;
+            }
+        case INST_UMOD:
+            if (cf->stack[cf->stack_size - 1].as_u64 == 0) {
+                return STATUS_DIVISON_BY_ZERO;
+            }
+            BINARY_OP(cf, u64, u64, %)
     }
 
     return STATUS_ILLEGAL_OPCODE;

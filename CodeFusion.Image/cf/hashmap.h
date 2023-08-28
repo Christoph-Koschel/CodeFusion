@@ -3,8 +3,6 @@
 
 #include <inttypes.h>
 
-#define HASH_MAP_SIZE 65536
-
 struct HashNode {
     uint64_t key;
     uint16_t value;
@@ -20,9 +18,9 @@ typedef struct {
 
 HashMap *create_hash_map(size_t size);
 
-uint16_t get_hash_map(HashMap* map, uint64_t key);
+uint16_t get_hash_map(HashMap *map, uint64_t key);
 
-void put_hash_map(HashMap* map, uint64_t key, uint16_t value);
+void put_hash_map(HashMap *map, uint64_t key, uint16_t value);
 
 
 #endif
