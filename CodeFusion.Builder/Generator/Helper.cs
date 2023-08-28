@@ -18,7 +18,19 @@ public partial class Maker
 
     private static void CopyFile(string src, string dstFolder, bool overwrite = false)
     {
+        if (!overwrite)
+        {
+            if (File.Exists(Path.Combine(dstFolder, Path.GetFileName(src))))
+            {
+                return;
+            }
+        }
         File.Copy(src, Path.Combine(dstFolder, Path.GetFileName(src)), overwrite);
+    }
+
+    private static void RenameFile(string src, string newName)
+    {
+        File.Move(src, Path.Combine(Path.GetDirectoryName(src), newName), true);
     }
 
     private static void ExecuteGCC(params string[] arguments)
@@ -43,7 +55,7 @@ public partial class Maker
     {
         ProcessStartInfo info = new ProcessStartInfo(executable)
         {
-            WorkingDirectory = Directory.GetCurrentDirectory()
+            WorkingDirectory = Path.Combine(Directory.GetCurrentDirectory(), "obj")
         };
         foreach (string argument in arguments)
         {
