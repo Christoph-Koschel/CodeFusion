@@ -1,5 +1,5 @@
-#ifndef CF_IMAGE_HASHMAP_H
-#define CF_IMAGE_HASHMAP_H
+#ifndef CF_HASHMAP_H
+#define CF_HASHMAP_H
 
 #include <inttypes.h>
 

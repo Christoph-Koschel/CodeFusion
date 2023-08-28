@@ -3,20 +3,21 @@
 #include "loader.h"
 #include "opcode.h"
 
-static void read_buff(void *dst, size_t item_size, size_t count, void *buff) {
+static void read_buff(void *dst, size_t item_size, size_t count, void **buff) {
     void *dst2 = dst;
 
-    for (size_t i = 0; i < count; ++i) {
-        memcpy(dst2, buff, item_size);
-        buff += item_size;
+    for (size_t i = 0; i < count; i++) {
+        memcpy(dst2, *buff, item_size);
+        *buff += item_size;
         dst2 += item_size;
     }
 }
 
-void cf_load_metadata(char *buff, Metadata *metadata) {
+void cf_load_metadata(void **buff, Metadata *metadata) {
     read_buff(metadata->magic, 1, 3, buff);
     read_buff(&metadata->version, sizeof(metadata->version), 1, buff);
     read_buff(&metadata->flags, sizeof(metadata->flags), 1, buff);
+    read_buff(&metadata->entry_point, sizeof(metadata->entry_point), 1, buff);
     read_buff(&metadata->pool_size, sizeof(metadata->pool_size), 1, buff);
     read_buff(&metadata->program_size, sizeof(metadata->program_size), 1, buff);
 
@@ -31,7 +32,7 @@ void cf_load_metadata(char *buff, Metadata *metadata) {
     }
 }
 
-void cf_load_pool(char *buff, Metadata *metadata, CF_Machine *cf) {
+void cf_load_pool(void **buff, Metadata *metadata, CF_Machine *cf) {
     for (uint16_t i = 0; i < metadata->pool_size; i++) {
         uint64_t address;
         uint16_t value;
@@ -42,7 +43,7 @@ void cf_load_pool(char *buff, Metadata *metadata, CF_Machine *cf) {
     }
 }
 
-void cf_load_program(char *buff, Metadata *metadata, CF_Machine *cf) {
+void cf_load_program(void **buff, Metadata *metadata, CF_Machine *cf) {
     for (size_t i = 0; i < metadata->program_size; i++) {
         Inst inst;
         read_buff(&inst.opcode, 1, 1, buff);

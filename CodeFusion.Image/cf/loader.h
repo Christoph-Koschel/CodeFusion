@@ -19,10 +19,10 @@ typedef struct {
     uint64_t program_size;
 } Metadata;
 
-void cf_load_metadata(char *buff, Metadata *metadata);
+void cf_load_metadata(void **buff, Metadata *metadata);
 
-void cf_load_pool(char *buff, Metadata *metadata, CF_Machine *cf);
+void cf_load_pool(void **buff, Metadata *metadata, CF_Machine *cf);
 
-void cf_load_program(char *buff, Metadata *metadata, CF_Machine *cf);
+void cf_load_program(void **buff, Metadata *metadata, CF_Machine *cf);
 
 #endif

@@ -1,5 +1,6 @@
 #ifndef CF_OPCODE_H
 #define CF_OPCODE_H
+
 #include <inttypes.h>
 
 #define INST_NOP ((uint8_t)0)
