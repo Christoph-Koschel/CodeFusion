@@ -1,6 +1,7 @@
 #include <memory.h>
 #include <stdlib.h>
 #include "loader.h"
+#include "opcode.h"
 
 static void read_buff(void *dst, size_t item_size, size_t count, void *buff) {
     void *dst2 = dst;
@@ -30,10 +31,30 @@ void cf_load_metadata(char *buff, Metadata *metadata) {
     }
 }
 
-void cf_load_pool(char *buff, Metadata *metadata) {
-    // TODO Implement cf_load_pool function
+void cf_load_pool(char *buff, Metadata *metadata, CF_Machine *cf) {
+    for (uint16_t i = 0; i < metadata->pool_size; i++) {
+        uint64_t address;
+        uint16_t value;
+        read_buff(&address, sizeof(Word), 1, buff);
+        read_buff(&value, sizeof(uint16_t), 1, buff);
+
+        put_hash_map(cf->address_pool, address, value);
+    }
 }
 
 void cf_load_program(char *buff, Metadata *metadata, CF_Machine *cf) {
-    // TODO Implement cf_load_program function 
+    for (size_t i = 0; i < metadata->program_size; i++) {
+        Inst inst;
+        read_buff(&inst.opcode, 1, 1, buff);
+        if (cf_inst_has_operand(inst.opcode)) {
+            uint8_t size;
+            read_buff(&size, 1, 1, buff);
+            if (size == 0) {
+                inst.operand = WORD_U64(0);
+            } else {
+                read_buff(&inst.operand.as_u64, size, 1, buff);
+            }
+        }
+        cf->program[cf->program_size++] = inst;
+    }
 }
