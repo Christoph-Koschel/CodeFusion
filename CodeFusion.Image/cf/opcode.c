@@ -1,7 +1,7 @@
 #include "opcode.h"
 
 int cf_inst_has_operand(uint8_t opcode) {
-    switch(opcode) {
+    switch (opcode) {
         case INST_PUSH:
         case INST_LOAD:
         case INST_STORE:
@@ -12,6 +12,7 @@ int cf_inst_has_operand(uint8_t opcode) {
         case INST_DUP:
         case INST_LOAD_ARRAY:
         case INST_STORE_ARRAY:
+        case INST_INT:
             return 1;
         default:
             return 0;

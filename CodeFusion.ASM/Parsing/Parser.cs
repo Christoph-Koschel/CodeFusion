@@ -5,7 +5,6 @@ using CodeFusion.VM;
 
 namespace CodeFusion.ASM.Parsing;
 
-
 class Parser
 {
     private readonly SourceFile source;
@@ -216,7 +215,8 @@ class Parser
                 return Opcode.FMOD;
             case "umod":
                 return Opcode.UMOD;
-
+            case "int":
+                return Opcode.INT;
         }
 
         Report.PrintReport(source, token, $"Undefined instruction '{token.text}'");

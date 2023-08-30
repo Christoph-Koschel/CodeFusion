@@ -206,7 +206,7 @@ public class Runner
                 }
                 if (cf.stack[cf.stackSize - 1].asI64 == 0)
                 {
-                    return Error.DIVISON_BY_ZERO;
+                    return Error.DIVISION_BY_ZERO;
                 }
                 cf.stack[cf.stackSize - 2] = new Word(cf.stack[cf.stackSize - 2].asI64 / cf.stack[cf.stackSize - 1].asI64);
                 cf.stackSize--;
@@ -218,7 +218,7 @@ public class Runner
                 }
                 if (cf.stack[cf.stackSize - 1].asF64 == 0)
                 {
-                    return Error.DIVISON_BY_ZERO;
+                    return Error.DIVISION_BY_ZERO;
                 }
                 cf.stack[cf.stackSize - 2] = new Word(cf.stack[cf.stackSize - 2].asF64 / cf.stack[cf.stackSize - 1].asF64);
                 cf.stackSize--;
@@ -230,7 +230,7 @@ public class Runner
                 }
                 if (cf.stack[cf.stackSize - 1].asU64 == 0)
                 {
-                    return Error.DIVISON_BY_ZERO;
+                    return Error.DIVISION_BY_ZERO;
                 }
                 cf.stack[cf.stackSize - 2] = new Word(cf.stack[cf.stackSize - 2].asU64 / cf.stack[cf.stackSize - 1].asU64);
                 cf.stackSize--;
@@ -242,7 +242,7 @@ public class Runner
                 }
                 if (cf.stack[cf.stackSize - 1].asI64 == 0)
                 {
-                    return Error.DIVISON_BY_ZERO;
+                    return Error.DIVISION_BY_ZERO;
                 }
                 cf.stack[cf.stackSize - 2] = new Word(cf.stack[cf.stackSize - 2].asI64 % cf.stack[cf.stackSize - 1].asI64);
                 cf.stackSize--;
@@ -254,7 +254,7 @@ public class Runner
                 }
                 if (cf.stack[cf.stackSize - 1].asF64 == 0)
                 {
-                    return Error.DIVISON_BY_ZERO;
+                    return Error.DIVISION_BY_ZERO;
                 }
                 cf.stack[cf.stackSize - 2] = new Word(cf.stack[cf.stackSize - 2].asF64 % cf.stack[cf.stackSize - 1].asF64);
                 cf.stackSize--;
@@ -266,11 +266,22 @@ public class Runner
                 }
                 if (cf.stack[cf.stackSize - 1].asU64 == 0)
                 {
-                    return Error.DIVISON_BY_ZERO;
+                    return Error.DIVISION_BY_ZERO;
                 }
                 cf.stack[cf.stackSize - 2] = new Word(cf.stack[cf.stackSize - 2].asU64 % cf.stack[cf.stackSize - 1].asU64);
                 cf.stackSize--;
                 return Error.OK;
+            case Opcode.INT:
+                if (cf.stackSize < 1)
+                {
+                    return Error.STACK_UNDERFLOW;
+                }
+                if (cf.interrupts[cf.stack[cf.stackSize - 1].asU64] == null)
+                {
+                    return Error.ILLEGAL_INTERRUPT;
+                }
+                cf.stackSize--;
+                return cf.interrupts[cf.stack[cf.stackSize - 1].asU64](cf);
         }
 
         return Error.ILLEGAL_OPCODE;

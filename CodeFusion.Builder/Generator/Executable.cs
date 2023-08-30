@@ -29,6 +29,7 @@ public partial class Maker
         }
 
         CopyFile(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "img", part, "image.o"), "obj", true);
+        CopyFile(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "img", part, "table.o"), "obj", true);
         ExecuteLD("-r", "-b", "binary", "cf/code.bin", "-o", "code.o");
 
         MakeFolder("bin");
@@ -47,6 +48,7 @@ public partial class Maker
                 "-L" + libCBase,
                 "./code.o",
                 "./image.o",
+                "./table.o",
                 "-lmingw32",
                 "-lgcc",
                 "-lgcc_eh",

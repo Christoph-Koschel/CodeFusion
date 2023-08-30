@@ -1,8 +1,10 @@
 
 #include <malloc.h>
 #include <math.h>
+#include <memory.h>
 #include "machine.h"
 #include "opcode.h"
+
 
 #define BINARY_OP(cf, in, out, op)                                                               \
 {                                                                                                \
@@ -12,7 +14,7 @@
     (cf)->stack[(cf)->stack_size - 2].as_##out =                                                 \
         (cf)->stack[(cf)->stack_size - 2].as_##in op (cf)->stack[(cf)->stack_size - 1].as_##in;  \
     (cf)->stack_size--;                                                                          \
-    break;                                                                                       \
+    return STATUS_OK;                                                                            \
 }                                                                                                \
 
 #define CAST_OP(cf, from, to, cast)                                                              \
@@ -22,30 +24,20 @@
     }                                                                                            \
     (cf)->stack[(cf)->stack_size - 1].as_##to = cast (cf)->stack[(cf)->stack_size - 1].as_##from;\
     (cf)->ip++;                                                                                  \
-    break;                                                                                       \
+    return STATUS_OK;                                                                            \
 }
 
+CF_Interrupt interrupts[INTERRUPT_CAPACITY] = {0};
 
 static Word read_ptr(void *ptr, Word size) {
-    uint64_t result = 0;
-    char *buffer = (char *) ptr;
+    Word result = WORD_U64(0);
+    memcpy(&result.as_u64, ptr, size.as_u64);
 
-    for (size_t i = 0; i < size.as_u64; i++) {
-        result |= (uint64_t) (*buffer << i * 8);
-        buffer++;
-    }
-
-    return WORD_U64(result);
+    return result;
 }
 
 static void write_ptr(void *ptr, Word value, Word size) {
-    char *buffer = (char *) ptr;
-    uint64_t write = value.as_u64;
-
-    for (size_t i = 0; i < size.as_u64; i++) {
-        buffer[i] = (char) (write & 0xFF);
-        write >>= 8;
-    }
+    memcpy(ptr, &value.as_u64, size.as_u64);
 }
 
 static Word read_ptr_at(void *ptr, Word offset, Word size) {
@@ -70,6 +62,7 @@ Status cf_execute_inst(CF_Machine *cf) {
     }
 
     Inst inst = cf->program[cf->program_counter++];
+
     switch (inst.opcode) {
         case INST_NOP:
             return STATUS_OK;
@@ -174,27 +167,27 @@ Status cf_execute_inst(CF_Machine *cf) {
         case INST_UMUL: BINARY_OP(cf, u64, u64, *)
         case INST_IDIV:
             if (cf->stack[cf->stack_size - 1].as_i64 == 0) {
-                return STATUS_DIVISON_BY_ZERO;
+                return STATUS_DIVISION_BY_ZERO;
             }
             BINARY_OP(cf, i64, i64, /)
         case INST_FDIV:
             if (cf->stack[cf->stack_size - 1].as_f64 == 0) {
-                return STATUS_DIVISON_BY_ZERO;
+                return STATUS_DIVISION_BY_ZERO;
             }
             BINARY_OP(cf, f64, f64, /)
         case INST_UDIV:
             if (cf->stack[cf->stack_size - 1].as_u64 == 0) {
-                return STATUS_DIVISON_BY_ZERO;
+                return STATUS_DIVISION_BY_ZERO;
             }
             BINARY_OP(cf, u64, u64, /)
         case INST_IMOD:
             if (cf->stack[cf->stack_size - 1].as_i64 == 0) {
-                return STATUS_DIVISON_BY_ZERO;
+                return STATUS_DIVISION_BY_ZERO;
             }
             BINARY_OP(cf, i64, i64, %)
         case INST_FMOD:
             if (cf->stack[cf->stack_size - 1].as_f64 == 0) {
-                return STATUS_DIVISON_BY_ZERO;
+                return STATUS_DIVISION_BY_ZERO;
             }
             {
                 if ((cf)->stack_size < 2) { return STATUS_STACK_UNDERFLOW; }
@@ -205,9 +198,14 @@ Status cf_execute_inst(CF_Machine *cf) {
             }
         case INST_UMOD:
             if (cf->stack[cf->stack_size - 1].as_u64 == 0) {
-                return STATUS_DIVISON_BY_ZERO;
+                return STATUS_DIVISION_BY_ZERO;
             }
             BINARY_OP(cf, u64, u64, %)
+        case INST_INT:
+            if (interrupts[inst.operand.as_u64] == NULL) {
+                return STATUS_ILLEGAL_INTERRUPT;
+            }
+            return interrupts[inst.operand.as_u64](cf);
     }
 
     return STATUS_ILLEGAL_OPCODE;

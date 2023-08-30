@@ -36,3 +36,5 @@
     push 0
     loadarray 4
     freepool
+    push 0
+    int 6

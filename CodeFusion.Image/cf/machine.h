@@ -9,6 +9,7 @@
 #define STACK_CAPACITY 1024
 #define PROGRAM_CAPACITY 1024
 #define CALLSTACK_CAPACITY 1024
+#define INTERRUPT_CAPACITY 255
 
 #define WORD_U64(value) ((Word){.as_u64 = value})
 #define WORD_I64(value) ((Word){.as_i64 = value})
@@ -53,8 +54,11 @@ typedef enum {
     STATUS_STACK_OVERFLOW,
     STATUS_CALL_STACK_OVERFLOW,
     STATUS_CALL_STACK_UNDERFLOW,
-    STATUS_DIVISON_BY_ZERO
+    STATUS_DIVISION_BY_ZERO,
+    STATUS_ILLEGAL_INTERRUPT
 } Status;
+
+typedef Status (*CF_Interrupt)(CF_Machine *);
 
 Status cf_execute_inst(CF_Machine *cf);
 

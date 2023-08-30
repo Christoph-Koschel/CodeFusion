@@ -32,6 +32,8 @@
 #define INST_IMOD ((uint8_t)26)
 #define INST_FMOD ((uint8_t)27)
 #define INST_UMOD ((uint8_t)28)
+#define INST_INT ((uint8_t)29)
 
 int cf_inst_has_operand(uint8_t opcode);
+
 #endif
