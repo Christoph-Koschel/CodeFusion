@@ -282,6 +282,64 @@ public class Runner
                 }
                 cf.stackSize--;
                 return cf.interrupts[cf.stack[cf.stackSize - 1].asU64](cf);
+            case Opcode.JMP:
+                if (inst.operand.asU64 >= cf.programCounter)
+                {
+                    return Error.ILLEGAL_ACCESS;
+                }
+                cf.programCounter = inst.operand.asU64;
+                return Error.OK;
+            case Opcode.JMP_ZERO:
+                if (cf.stackSize < 1)
+                {
+                    return Error.STACK_UNDERFLOW;
+                }
+                if (inst.operand.asU64 >= cf.programCounter)
+                {
+                    return Error.ILLEGAL_ACCESS;
+                }
+                if (cf.stack[--cf.stackSize].asU64 == 0)
+                {
+                    cf.programCounter = inst.operand.asU64;
+                }
+                return Error.OK;
+            case Opcode.JMP_NOT_ZERO:
+                if (cf.stackSize < 1)
+                {
+                    return Error.STACK_UNDERFLOW;
+                }
+                if (inst.operand.asU64 >= cf.programCounter)
+                {
+                    return Error.ILLEGAL_ACCESS;
+                }
+                if (cf.stack[--cf.stackSize].asU64 != 0)
+                {
+                    cf.programCounter = inst.operand.asU64;
+                }
+                return Error.OK;
+            case Opcode.CALL:
+                if (cf.stackSize >= VmCodeFusion.STACK_CAPACITY)
+                {
+                    return Error.STACK_OVERFLOW;
+                }
+                if (inst.operand.asU64 >= cf.programCounter)
+                {
+                    return Error.ILLEGAL_ACCESS;
+                }
+                cf.stack[cf.stackSize++] = new Word(cf.programCounter);
+                cf.programCounter = inst.operand.asU64;
+                return Error.OK;
+            case Opcode.RET:
+                if (cf.stackSize < 1)
+                {
+                    return Error.STACK_UNDERFLOW;
+                }
+                if (cf.stack[cf.stackSize - 1].asU64 >= cf.programCounter)
+                {
+                    return Error.ILLEGAL_ACCESS;
+                }
+                cf.programCounter = cf.stack[--cf.stackSize].asU64 + 1;
+                return Error.OK;
         }
 
         return Error.ILLEGAL_OPCODE;

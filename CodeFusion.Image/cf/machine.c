@@ -206,6 +206,53 @@ Status cf_execute_inst(CF_Machine *cf) {
                 return STATUS_ILLEGAL_INTERRUPT;
             }
             return interrupts[inst.operand.as_u64](cf);
+        case INST_JMP:
+            if (inst.operand.as_u64 >= cf->program_size) {
+                return STATUS_ILLEGAL_ACCESS;
+            }
+            cf->program_counter = inst.operand.as_u64;
+            return STATUS_OK;
+        case INST_JMP_ZERO:
+            if (cf->stack_size < 1) {
+                return STATUS_STACK_UNDERFLOW;
+            }
+            if (inst.operand.as_u64 >= cf->program_size) {
+                return STATUS_ILLEGAL_ACCESS;
+            }
+            if (cf->stack[--cf->stack_size].as_u64 == 0) {
+                cf->program_counter = inst.operand.as_u64;
+            }
+            return STATUS_OK;
+        case INST_JMP_NOT_ZERO:
+            if (cf->stack_size < 1) {
+                return STATUS_STACK_UNDERFLOW;
+            }
+            if (inst.operand.as_u64 >= cf->program_size) {
+                return STATUS_ILLEGAL_ACCESS;
+            }
+            if (cf->stack[--cf->stack_size].as_u64 != 0) {
+                cf->program_counter = inst.operand.as_u64;
+            }
+            return STATUS_OK;
+        case INST_CALL:
+            if (cf->stack_size >= STACK_CAPACITY) {
+                return STATUS_STACK_OVERFLOW;
+            }
+            if (inst.operand.as_u64 >= cf->program_size) {
+                return STATUS_ILLEGAL_ACCESS;
+            }
+            cf->stack[cf->stack_size++] = WORD_U64(cf->program_counter);
+            cf->program_counter = inst.operand.as_u64;
+            return STATUS_OK;
+        case INST_RET:
+            if (cf->stack_size < 1) {
+                return STATUS_STACK_UNDERFLOW;
+            }
+            if (cf->stack[cf->stack_size - 1].as_u64 >= cf->program_size) {
+                return STATUS_ILLEGAL_ACCESS;
+            }
+            cf->program_counter = cf->stack[--cf->stack_size].as_u64 + 1;
+            return STATUS_OK;
     }
 
     return STATUS_ILLEGAL_OPCODE;

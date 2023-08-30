@@ -13,6 +13,10 @@ int cf_inst_has_operand(uint8_t opcode) {
         case INST_LOAD_ARRAY:
         case INST_STORE_ARRAY:
         case INST_INT:
+        case INST_JMP:
+        case INST_JMP_ZERO:
+        case INST_JMP_NOT_ZERO:
+        case INST_CALL:
             return 1;
         default:
             return 0;

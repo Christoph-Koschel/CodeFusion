@@ -196,6 +196,13 @@ public static class Opcode
     /// </summary>
     public const byte INT = 29;
 
+    public const byte JMP = 30;
+    public const byte JMP_ZERO = 31;
+    public const byte JMP_NOT_ZERO = 32;
+
+    public const byte CALL = 33;
+    public const byte RET = 34;
+
     public static bool HasOperand(byte opcode)
     {
         switch (opcode)
@@ -211,6 +218,10 @@ public static class Opcode
             case LOAD_ARRAY:
             case STORE_ARRAY:
             case INT:
+            case JMP:
+            case JMP_ZERO:
+            case JMP_NOT_ZERO:
+            case CALL:
                 return true;
             default:
                 return false;

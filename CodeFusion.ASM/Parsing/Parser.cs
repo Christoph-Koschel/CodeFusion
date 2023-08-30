@@ -217,6 +217,16 @@ class Parser
                 return Opcode.UMOD;
             case "int":
                 return Opcode.INT;
+            case "jmp":
+                return Opcode.JMP;
+            case "jmpz":
+                return Opcode.JMP_ZERO;
+            case "jmpnz":
+                return Opcode.JMP_NOT_ZERO;
+            case "call":
+                return Opcode.CALL;
+            case "ret":
+                return Opcode.RET;
         }
 
         Report.PrintReport(source, token, $"Undefined instruction '{token.text}'");
