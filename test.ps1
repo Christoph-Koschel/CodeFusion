@@ -4,3 +4,4 @@ dotnet run --project CodeFusion.Builder -- test.bin
 Write-Host "Starting program";
 .\bin\a.exe
 Write-Host "Program finished";
+
