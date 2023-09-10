@@ -3,7 +3,7 @@ using System.IO;
 
 namespace CodeFusion.VM;
 
-public class Loader
+public static class Loader
 {
     public static Metadata ReadMainHeader(ref BinaryReader reader)
     {
@@ -45,52 +45,5 @@ public class Loader
             addressCount = BitConverter.ToUInt16(metadata, RelocatableMetadata.ADDRESS_OFFSET)
         };
         return meta;
-    }
-
-    public static void LoadFile(ref VmCodeFusion cf, string path)
-    {
-        BinaryReader reader = new BinaryReader(new FileStream(path, FileMode.Open));
-        Metadata meta = ReadMainHeader(ref reader);
-
-        if ((meta.flags & Metadata.EXECUTABLE) != Metadata.EXECUTABLE)
-        {
-            Console.Error.WriteLine("Program is not executable");
-            Environment.Exit(1);
-        }
-
-        cf.programCounter = meta.entryPoint;
-
-        ulong i;
-        for (i = 0; i < meta.poolSize; i++)
-        {
-            ulong address = BitConverter.ToUInt64(reader.ReadBytes(8));
-            ushort size = BitConverter.ToUInt16(reader.ReadBytes(2));
-            cf.addressPool.Add(address, size);
-        }
-        for (i = 0; i < meta.programSize; i++)
-        {
-            Inst inst = new Inst
-            {
-                opcode = reader.ReadByte()
-            };
-            if (Opcode.HasOperand(inst.opcode))
-            {
-                byte size = reader.ReadByte();
-                if (size == 0)
-                {
-                    inst.operand = new Word(0);
-                }
-                else
-                {
-                    byte[] bytes = new byte[8];
-                    for (int j = 0; j < size; j++)
-                    {
-                        bytes[j] = reader.ReadByte();
-                    }
-                    inst.operand = new Word(BitConverter.ToUInt64(bytes));
-                }
-            }
-            cf.program[cf.programSize++] = inst;
-        }
     }
 }

@@ -1,13 +1,11 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# 
+#
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CodeFusion", "CodeFusion\CodeFusion.csproj", "{64815CE1-D02E-482D-9F94-116431377778}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CodeFusion.ASM", "CodeFusion.ASM\CodeFusion.ASM.csproj", "{CBE7FCA1-0627-445E-B07B-B5FE0F5EB39B}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CodeFusion.Dump", "CodeFusion.Dump\CodeFusion.Dump.csproj", "{1BA5D0D5-C294-4C3A-B914-BC513C1B81E8}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CodeFusion.Execution", "CodeFusion.Execution\CodeFusion.Execution.csproj", "{368206FF-BC02-4A0B-B9A6-2B6F53B4B11A}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CodeFusion.Builder", "CodeFusion.Builder\CodeFusion.Builder.csproj", "{788F0928-A514-4287-A127-ABA42F5D1CE3}"
 EndProject
@@ -29,10 +27,6 @@ Global
 		{1BA5D0D5-C294-4C3A-B914-BC513C1B81E8}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{1BA5D0D5-C294-4C3A-B914-BC513C1B81E8}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{1BA5D0D5-C294-4C3A-B914-BC513C1B81E8}.Release|Any CPU.Build.0 = Release|Any CPU
-		{368206FF-BC02-4A0B-B9A6-2B6F53B4B11A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{368206FF-BC02-4A0B-B9A6-2B6F53B4B11A}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{368206FF-BC02-4A0B-B9A6-2B6F53B4B11A}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{368206FF-BC02-4A0B-B9A6-2B6F53B4B11A}.Release|Any CPU.Build.0 = Release|Any CPU
 		{788F0928-A514-4287-A127-ABA42F5D1CE3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{788F0928-A514-4287-A127-ABA42F5D1CE3}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{788F0928-A514-4287-A127-ABA42F5D1CE3}.Release|Any CPU.ActiveCfg = Release|Any CPU
