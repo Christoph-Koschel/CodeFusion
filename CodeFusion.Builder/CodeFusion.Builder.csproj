@@ -22,5 +22,9 @@
             <_LibC Include="../tools/libc/*.*"/>
         </ItemGroup>
         <Copy SourceFiles="@(_LibC)" DestinationFolder="$(OutDir)/libc"/>
+        <ItemGroup>
+            <_LibCLib Include="../tools/libc/lib/*.*"/>
+        </ItemGroup>
+        <Copy SourceFiles="@(_LibCLib)" DestinationFolder="$(OutDir)/libc/lib"/>
     </Target>
 </Project>

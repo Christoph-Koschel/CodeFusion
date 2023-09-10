@@ -35,10 +35,6 @@ public partial class Maker
 
     private static void ExecuteGCC(params string[] arguments)
     {
-        if (OperatingSystem.IsWindows())
-        {
-            ExecuteProgram(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "gcc.exe"), arguments);
-        }
         ExecuteProgram("gcc", arguments);
     }
 
@@ -46,6 +42,7 @@ public partial class Maker
     {
         if (OperatingSystem.IsWindows())
         {
+            Console.WriteLine("ld " + string.Join(" ", arguments));
             ExecuteProgram(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "ld.exe"), arguments);
         }
         ExecuteProgram("ld", arguments);

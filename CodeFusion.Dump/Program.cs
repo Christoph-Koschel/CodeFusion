@@ -54,6 +54,7 @@ public class Program
             Console.WriteLine("{0, 15}: {1, -30}", "VM Flags", Convert.ToString(metadata.flags, 2));
             Console.WriteLine("{0, 15}: {1, -30}", "Instructions", metadata.programSize);
             Console.WriteLine("{0, 15}: {1, -30}", "Pools", metadata.poolSize);
+            Console.WriteLine("{0, 15}: {1, -30}", "Symbols", metadata.symbolSize);
             Console.WriteLine();
         }
 

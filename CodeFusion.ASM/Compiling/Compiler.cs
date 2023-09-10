@@ -10,12 +10,14 @@ public class Compiler
     private readonly Inst[][] insts;
     private readonly Dictionary<Word, ushort> pool;
     private readonly ulong entryPoint;
+    private readonly uint symbolSize;
 
-    public Compiler(Inst[][] insts, Dictionary<Word, ushort> pool, ulong entryPoint)
+    public Compiler(Inst[][] insts, Dictionary<Word, ushort> pool, ulong entryPoint, uint symbolSize = 0)
     {
         this.insts = insts;
         this.pool = pool;
         this.entryPoint = entryPoint;
+        this.symbolSize = symbolSize;
     }
 
     public void WriteHeader(ref BinaryWriter writer, byte flags)
@@ -33,6 +35,7 @@ public class Compiler
         writer.Write(entryPoint);
         writer.Write((ushort)pool.Count);
         writer.Write(size);
+        writer.Write(symbolSize);
     }
 
     public void WriteRelocatableHeader(ref BinaryWriter writer, ushort symbolCount, ushort missingCount, ushort addressCount)
@@ -93,11 +96,12 @@ public class Compiler
     {
         foreach (KeyValuePair<string, ulong> label in labels)
         {
+            writer.Write((ushort)label.Key.Length);
+
             foreach (char c in label.Key)
             {
                 writer.Write((byte)c);
             }
-            writer.Write((byte)0);
             writer.Write(label.Value);
         }
     }
@@ -106,11 +110,12 @@ public class Compiler
     {
         foreach (KeyValuePair<ulong, string> label in labels)
         {
+            writer.Write((ushort)label.Value.Length);
+
             foreach (char c in label.Value)
             {
                 writer.Write((byte)c);
             }
-            writer.Write((byte)0);
             writer.Write(label.Key);
         }
     }

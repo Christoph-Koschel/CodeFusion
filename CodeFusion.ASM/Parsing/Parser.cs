@@ -225,6 +225,8 @@ class Parser
                 return Opcode.JMP_NOT_ZERO;
             case "call":
                 return Opcode.CALL;
+            case "vcall":
+                return Opcode.VCALL;
             case "ret":
                 return Opcode.RET;
         }

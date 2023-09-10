@@ -17,7 +17,8 @@ public class Loader
             version = BitConverter.ToUInt16(metadata, Metadata.VERSION_OFFSET),
             flags = metadata[Metadata.FLAGS_OFFSET],
             poolSize = BitConverter.ToUInt16(metadata, Metadata.POOL_OFFSET),
-            programSize = BitConverter.ToUInt64(metadata, Metadata.PROGRAM_OFFSET)
+            programSize = BitConverter.ToUInt64(metadata, Metadata.PROGRAM_OFFSET),
+            symbolSize = BitConverter.ToUInt32(metadata, Metadata.SYMBOL_OFFSET)
         };
 
         if (meta.magic[0] != '.' || meta.magic[1] != 'C' || meta.magic[2] != 'F')

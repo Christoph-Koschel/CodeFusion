@@ -1,12 +1,20 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Text;
 using CodeFusion.ASM.Compiling;
 using CodeFusion.ASM.Lexing;
 using CodeFusion.ASM.Parsing;
 using CodeFusion.VM;
 
 namespace CodeFusion.ASM;
+
+public enum OutputType
+{
+    RELOCATABLE,
+    EXECUTABLE,
+    LIBRARY
+}
 
 class Program
 {
@@ -20,9 +28,21 @@ class Program
             {
                 Options.INSTANCE.output = args[++i];
             }
-            else if (args[i] == "-r")
+            else if (args[i] == "-t")
             {
-                Options.INSTANCE.relocatable = true;
+                string value = args[++i];
+                if (value == "exe")
+                {
+                    Options.INSTANCE.outputType = OutputType.EXECUTABLE;
+                }
+                else if (value == "lib")
+                {
+                    Options.INSTANCE.outputType = OutputType.LIBRARY;
+                }
+                else if (value == "obj")
+                {
+                    Options.INSTANCE.outputType = OutputType.RELOCATABLE;
+                }
             }
             else if (args[i] == "-e")
             {
@@ -40,32 +60,81 @@ class Program
 
         Options.INSTANCE.files = files.ToArray();
 
-        if (Options.INSTANCE.files.Length  < 1) {
+        if (Options.INSTANCE.files.Length < 1)
+        {
             Console.ForegroundColor = ConsoleColor.DarkRed;
             Console.Error.WriteLine("No files given");
             Environment.Exit(1);
         }
 
+
+        bool checkForCF = files[0].EndsWith(".cf");
+        foreach (string file in files)
+        {
+            if (checkForCF)
+            {
+                if (!file.EndsWith(".cf"))
+                {
+                    Console.ForegroundColor = ConsoleColor.DarkRed;
+                    Console.Error.WriteLine("Can only use object files or code files as input");
+                    Environment.Exit(1);
+                }
+            }
+            else
+            {
+                if (file.EndsWith(".cf"))
+                {
+                    Console.ForegroundColor = ConsoleColor.DarkRed;
+                    Console.Error.WriteLine("Can only use object files or code files as input");
+                    Environment.Exit(1);
+                }
+            }
+        }
+
         if (Options.INSTANCE.combine)
         {
-            if (Options.INSTANCE.relocatable)
+            if (Options.INSTANCE.outputType != OutputType.RELOCATABLE)
             {
-                CombineObjs();
+                Console.ForegroundColor = ConsoleColor.DarkRed;
+                Console.Error.WriteLine("Can only combine object files to relocatable object file");
+                Environment.Exit(1);
+            }
+            if (checkForCF)
+            {
+                Console.ForegroundColor = ConsoleColor.DarkRed;
+                Console.Error.WriteLine("Can only combine object files");
+                Environment.Exit(1);
+            }
+
+            CombineObjs();
+        }
+        else if (Options.INSTANCE.outputType == OutputType.RELOCATABLE)
+        {
+            if (checkForCF)
+            {
+                CompileASMToObject();
+            }
+        }
+        else if (Options.INSTANCE.outputType == OutputType.EXECUTABLE)
+        {
+            if (checkForCF)
+            {
+                CompileASMToExecutable();
             }
             else
             {
                 CombineObjsToExecutable();
             }
         }
-        else
+        else if (Options.INSTANCE.outputType == OutputType.LIBRARY)
         {
-            if (Options.INSTANCE.relocatable)
+            if (checkForCF)
             {
-                CompileASMToObject();
+                CompileASMToLibrary();
             }
             else
             {
-                CompileASMToExecutable();
+                CombineObjsToLibrary();
             }
         }
     }
@@ -76,7 +145,7 @@ class Program
 
         foreach (string path in Options.INSTANCE.files)
         {
-            BinaryReader reader = new BinaryReader(new FileStream(path,FileMode.Open));
+            BinaryReader reader = new BinaryReader(new FileStream(path, FileMode.Open));
             Metadata meta = Loader.ReadMainHeader(ref reader);
             if (meta.magic[0] != '.' || meta.magic[1] != 'C' || meta.magic[2] != 'F')
             {
@@ -89,7 +158,7 @@ class Program
                 Report.PrintReport(path, $"Object is not compatible with the VM file expect '{meta.version}' VM has '{Metadata.CURRENT_VERSION}'");
                 continue;
             }
-            
+
             if ((meta.flags & Metadata.RELOCATABLE) != Metadata.RELOCATABLE)
             {
                 Report.PrintReport(path, "Object is not relocatable");
@@ -101,30 +170,15 @@ class Program
 
             for (int i = 0; i < relocatable.symbolCount; i++)
             {
-                byte b;
-                string name = "";
-                do
-                {
-                    b = reader.ReadByte();
-                    if (b != 0) {
-                        name += (char)b;
-                    }
-                } while (b != 0);
+                ushort nameLength = reader.ReadUInt16();
+                string name = Encoding.ASCII.GetString(reader.ReadBytes(nameLength));
                 unit.labels.Add(name, BitConverter.ToUInt64(reader.ReadBytes(8)));
             }
-            
+
             for (int i = 0; i < relocatable.missingCount; i++)
             {
-                byte b;
-                string name = "";
-                do
-                {
-                    b = reader.ReadByte();
-                    if (b != 0) {
-                        name += (char)b;
-                    }
-                } while (b != 0);
-
+                ushort nameLength = reader.ReadUInt16();
+                string name = Encoding.ASCII.GetString(reader.ReadBytes(nameLength));
                 unit.unresolved.Add(BitConverter.ToUInt64(reader.ReadBytes(8)), name);
             }
 
@@ -174,12 +228,13 @@ class Program
     {
         ObjectUnit[] units = CreateObjectUnits();
 
-        if (Report.sentErros) {
+        if (Report.sentErros)
+        {
             return;
         }
 
         ObjectUnit baseUnit = units[0];
-        
+
         if (units.Length > 1)
         {
             Combinder combinder = new Combinder();
@@ -192,11 +247,19 @@ class Program
 
         foreach (KeyValuePair<ulong, string> unresolved in baseUnit.unresolved)
         {
-            Report.PrintWarning(baseUnit.path, $"WARNING: Unresolved label '{unresolved.Value}'");
+            Report.PrintReport(baseUnit.path, $"ERROR: Unresolved label '{unresolved.Value}'");
+        }
+
+        if (Report.sentErros)
+        {
+            return;
         }
 
         BinaryWriter writer = new BinaryWriter(new FileStream(Options.INSTANCE.output, FileMode.OpenOrCreate));
-        Compiler compiler = new Compiler(new[] { baseUnit.insts.ToArray() }, baseUnit.pool, 0);
+        Compiler compiler = new Compiler(new[]
+        {
+            baseUnit.insts.ToArray()
+        }, baseUnit.pool, 0);
         compiler.WriteHeader(ref writer, (byte)(Metadata.EXECUTABLE | (baseUnit.unresolved.Count == 0 ? 0 : Metadata.CONTAINS_ERRORS)));
         compiler.WritePool(ref writer);
         compiler.WriteProgram(ref writer);
@@ -208,7 +271,8 @@ class Program
     {
         ObjectUnit[] units = CreateObjectUnits();
 
-        if (Report.sentErros) {
+        if (Report.sentErros)
+        {
             return;
         }
 
@@ -233,7 +297,10 @@ class Program
         }
 
         BinaryWriter writer = new BinaryWriter(new FileStream(Options.INSTANCE.output, FileMode.OpenOrCreate));
-        Compiler compiler = new Compiler(new[] { baseUnit.insts.ToArray() }, baseUnit.pool, 0);
+        Compiler compiler = new Compiler(new[]
+        {
+            baseUnit.insts.ToArray()
+        }, baseUnit.pool, 0);
         compiler.WriteHeader(ref writer, (byte)(Metadata.RELOCATABLE | (baseUnit.unresolved.Count == 0 ? 0 : Metadata.CONTAINS_ERRORS)));
         compiler.WriteRelocatableHeader(ref writer, (ushort)baseUnit.labels.Count, (ushort)baseUnit.unresolved.Count, (ushort)baseUnit.addresses.Count);
         compiler.WriteSymbols(ref writer, baseUnit.labels);
@@ -242,6 +309,49 @@ class Program
         compiler.WritePool(ref writer);
         compiler.WriteProgram(ref writer);
 
+        writer.Close();
+    }
+
+    private static void CombineObjsToLibrary()
+    {
+        ObjectUnit[] units = CreateObjectUnits();
+
+        if (Report.sentErros)
+        {
+            return;
+        }
+
+        ObjectUnit baseUnit = units[0];
+
+        if (units.Length > 1)
+        {
+            Combinder combinder = new Combinder();
+
+            for (int i = 1; i < units.Length; i++)
+            {
+                combinder.Combine(ref baseUnit, units[i]);
+            }
+        }
+
+        foreach (KeyValuePair<ulong, string> unresolved in baseUnit.unresolved)
+        {
+            Report.PrintReport(baseUnit.path, $"ERROR: Unresolved label '{unresolved.Value}'");
+        }
+
+        if (Report.sentErros)
+        {
+            return;
+        }
+
+        BinaryWriter writer = new BinaryWriter(new FileStream(Options.INSTANCE.output, FileMode.OpenOrCreate));
+        Compiler compiler = new Compiler(new[]
+        {
+            baseUnit.insts.ToArray()
+        }, baseUnit.pool, 0, (uint)baseUnit.labels.Count);
+        compiler.WriteHeader(ref writer, Metadata.LIBRARY);
+        compiler.WritePool(ref writer);
+        compiler.WriteProgram(ref writer);
+        compiler.WriteSymbols(ref writer, baseUnit.labels);
         writer.Close();
     }
 
@@ -367,6 +477,50 @@ class Program
             compiler.WriteAddresses(ref writer, addresses.ToArray());
             compiler.WritePool(ref writer);
             compiler.WriteProgram(ref writer);
+            writer.Close();
+        }
+    }
+
+    private static void CompileASMToLibrary()
+    {
+        CodeUnit[] units = CreateCodeUnits();
+        List<Inst[]> insts = new List<Inst[]>();
+        Dictionary<Word, ushort> pool = new Dictionary<Word, ushort>();
+        ulong entryPoint = 0;
+
+        Dictionary<string, ulong> labels = new Dictionary<string, ulong>();
+
+        foreach (CodeUnit unit in units)
+        {
+            foreach (KeyValuePair<ulong, Token> unresolved in unit.unresolved)
+            {
+                Report.PrintReport(unit.source, unresolved.Value, $"Unresolved label '{unresolved.Value.text}'");
+            }
+            insts.Add(unit.insts.ToArray());
+            foreach (KeyValuePair<Word, ushort> item in unit.pool)
+            {
+                pool.Add(item.Key, item.Value);
+            }
+
+            if (unit.labels.TryGetValue(Options.INSTANCE.entryPoint, out ulong value))
+            {
+                entryPoint = value;
+            }
+
+            foreach (KeyValuePair<string, ulong> label in unit.labels)
+            {
+                labels.Add(label.Key, label.Value);
+            }
+        }
+
+        if (!Report.sentErros)
+        {
+            Compiler compiler = new Compiler(insts.ToArray(), pool, entryPoint, (uint)labels.Count);
+            BinaryWriter writer = new BinaryWriter(new FileStream(Options.INSTANCE.output, FileMode.OpenOrCreate));
+            compiler.WriteHeader(ref writer, Metadata.LIBRARY);
+            compiler.WritePool(ref writer);
+            compiler.WriteProgram(ref writer);
+            compiler.WriteSymbols(ref writer, labels);
             writer.Close();
         }
     }

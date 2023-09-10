@@ -17,4 +17,4 @@ CodeFusion.sln.DotSettings.user
 .vscode
 *.bin
 *.o
-!tools/libc/*.o
+!tools/libc/**/*.o

@@ -37,7 +37,8 @@
 #define INST_JMP_ZERO ((uint8_t)31)
 #define INST_JMP_NOT_ZERO ((uint8_t)32)
 #define INST_CALL ((uint8_t)33)
-#define INST_RET ((uint8_t)34)
+#define INST_VCALL ((uint8_t)34)
+#define INST_RET ((uint8_t)35)
 
 int cf_inst_has_operand(uint8_t opcode);
 

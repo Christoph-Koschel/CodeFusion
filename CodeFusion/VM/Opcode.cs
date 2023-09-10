@@ -201,7 +201,8 @@ public static class Opcode
     public const byte JMP_NOT_ZERO = 32;
 
     public const byte CALL = 33;
-    public const byte RET = 34;
+    public const byte VCALL = 34;
+    public const byte RET = 35;
 
     public static bool HasOperand(byte opcode)
     {

@@ -27,6 +27,10 @@
     return STATUS_OK;                                                                            \
 }
 
+#define CF_PROGRAM_SIZE(cf) (cf->libraries[cf->program_pool].program_size)
+#define CF_PROGRAM(cf) (cf->libraries[cf->program_pool].program)
+#define CF_ADDR_POOL(cf) (cf->libraries[cf->program_pool].address_pool)
+
 CF_Interrupt interrupts[INTERRUPT_CAPACITY] = {0};
 
 static Word read_ptr(void *ptr, Word size) {
@@ -57,11 +61,11 @@ static void write_pool_n(CF_Machine *cf, Word offset, Word value, Word size) {
 }
 
 Status cf_execute_inst(CF_Machine *cf) {
-    if (cf->program_counter >= cf->program_size) {
+    if (cf->program_counter >= CF_PROGRAM_SIZE(cf)) {
         return STATUS_ILLEGAL_ACCESS;
     }
 
-    Inst inst = cf->program[cf->program_counter++];
+    Inst inst = CF_PROGRAM(cf)[cf->program_counter++];
 
     switch (inst.opcode) {
         case INST_NOP:
@@ -95,7 +99,7 @@ Status cf_execute_inst(CF_Machine *cf) {
             if (cf->pool_stack_size >= CALLSTACK_CAPACITY) {
                 return STATUS_CALL_STACK_OVERFLOW;
             }
-            cf->pool_stack[cf->pool_stack_size++].as_ptr = malloc(get_hash_map(cf->address_pool, inst.operand.as_u64));
+            cf->pool_stack[cf->pool_stack_size++].as_ptr = malloc(get_hash_map(CF_ADDR_POOL(cf), inst.operand.as_u64));
             return STATUS_OK;
         case INST_FREE_POOL:
             if (cf->pool_stack_size < 1) {
@@ -205,9 +209,10 @@ Status cf_execute_inst(CF_Machine *cf) {
             if (interrupts[inst.operand.as_u64] == NULL) {
                 return STATUS_ILLEGAL_INTERRUPT;
             }
+            printf("Interrupt %"PRIu64"\n", inst.operand.as_u64);
             return interrupts[inst.operand.as_u64](cf);
         case INST_JMP:
-            if (inst.operand.as_u64 >= cf->program_size) {
+            if (inst.operand.as_u64 >= CF_PROGRAM_SIZE(cf)) {
                 return STATUS_ILLEGAL_ACCESS;
             }
             cf->program_counter = inst.operand.as_u64;
@@ -216,7 +221,7 @@ Status cf_execute_inst(CF_Machine *cf) {
             if (cf->stack_size < 1) {
                 return STATUS_STACK_UNDERFLOW;
             }
-            if (inst.operand.as_u64 >= cf->program_size) {
+            if (inst.operand.as_u64 >= CF_PROGRAM_SIZE(cf)) {
                 return STATUS_ILLEGAL_ACCESS;
             }
             if (cf->stack[--cf->stack_size].as_u64 == 0) {
@@ -227,7 +232,7 @@ Status cf_execute_inst(CF_Machine *cf) {
             if (cf->stack_size < 1) {
                 return STATUS_STACK_UNDERFLOW;
             }
-            if (inst.operand.as_u64 >= cf->program_size) {
+            if (inst.operand.as_u64 >= CF_PROGRAM_SIZE(cf)) {
                 return STATUS_ILLEGAL_ACCESS;
             }
             if (cf->stack[--cf->stack_size].as_u64 != 0) {
@@ -235,20 +240,48 @@ Status cf_execute_inst(CF_Machine *cf) {
             }
             return STATUS_OK;
         case INST_CALL:
-            if (cf->stack_size >= STACK_CAPACITY) {
+            if (cf->stack_size >= STACK_CAPACITY || cf->stack_size + 1 >= STACK_CAPACITY) {
                 return STATUS_STACK_OVERFLOW;
             }
-            if (inst.operand.as_u64 >= cf->program_size) {
+            if (inst.operand.as_u64 >= CF_PROGRAM_SIZE(cf)) {
                 return STATUS_ILLEGAL_ACCESS;
             }
+            cf->stack[cf->stack_size++] = WORD_U64(cf->program_pool);
             cf->stack[cf->stack_size++] = WORD_U64(cf->program_counter);
             cf->program_counter = inst.operand.as_u64;
             return STATUS_OK;
-        case INST_RET:
-            if (cf->stack_size < 1) {
+        case INST_VCALL:
+            if (cf->stack_size < 2) {
                 return STATUS_STACK_UNDERFLOW;
             }
-            if (cf->stack[cf->stack_size - 1].as_u64 >= cf->program_size) {
+            if (cf->stack[cf->stack_size - 2].as_u64 >= cf->library_size) {
+                return STATUS_ILLEGAL_LIBRARY_INDEX;
+            }
+
+            uint64_t oldLib = cf->program_pool;
+            cf->program_pool = cf->stack[cf->stack_size - 2].as_u64;
+            if (cf->stack[cf->stack_size - 1].as_u64 >= CF_PROGRAM_SIZE(cf)) {
+                return STATUS_ILLEGAL_ACCESS;
+            }
+            cf->stack[cf->stack_size - 2] = WORD_U64(oldLib);
+
+            uint64_t newIC = cf->stack[cf->stack_size - 1].as_u64;
+            cf->stack[cf->stack_size - 1] = WORD_U64(cf->program_counter);
+            cf->program_counter = newIC;
+            return STATUS_OK;
+        case INST_RET:
+            if (cf->stack_size < 2) {
+                return STATUS_STACK_UNDERFLOW;
+            }
+
+            if (cf->stack[cf->stack_size - 2].as_u64 >= cf->library_size) {
+                return STATUS_ILLEGAL_LIBRARY_INDEX;
+            }
+            if (cf->stack[cf->stack_size - 2].as_u64 != cf->program_pool) {
+                cf->program_pool = cf->stack[cf->stack_size - 2].as_u64;
+            }
+
+            if (cf->stack[cf->stack_size - 1].as_u64 >= CF_PROGRAM_SIZE(cf)) {
                 return STATUS_ILLEGAL_ACCESS;
             }
             cf->program_counter = cf->stack[--cf->stack_size].as_u64 + 1;
