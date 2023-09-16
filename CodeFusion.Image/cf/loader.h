@@ -16,9 +16,9 @@ typedef struct {
     uint16_t version;
     uint8_t flags;
     uint64_t entry_point;
-    uint16_t pool_size;
+    uint64_t pool_size;
     uint64_t program_size;
-    uint32_t symbol_size;
+    uint64_t symbol_size;
 } Metadata;
 
 void cf_load_metadata(void **buff, Metadata *metadata);

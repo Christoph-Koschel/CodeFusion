@@ -1,10 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Text;
+using System.Linq;
 using CodeFusion.ASM.Compiling;
 using CodeFusion.ASM.Lexing;
 using CodeFusion.ASM.Parsing;
+using CodeFusion.Format;
 using CodeFusion.VM;
 
 namespace CodeFusion.ASM;
@@ -16,7 +17,7 @@ public enum OutputType
     LIBRARY
 }
 
-class Program
+static class Program
 {
     public static void Main(string[] args)
     {
@@ -147,76 +148,19 @@ class Program
         {
             BinaryReader reader = new BinaryReader(new FileStream(path, FileMode.Open));
             Metadata meta = Loader.ReadMainHeader(ref reader);
-            if (meta.magic[0] != '.' || meta.magic[1] != 'C' || meta.magic[2] != 'F')
-            {
-                Report.PrintReport(path, "File has not the correct file format");
-                continue;
-            }
+            BinFile file = new BinFile(meta);
 
-            if (meta.version != Metadata.CURRENT_VERSION)
+            for (uint i = 0; i < meta.sectionCount; i++)
             {
-                Report.PrintReport(path, $"Object is not compatible with the VM file expect '{meta.version}' VM has '{Metadata.CURRENT_VERSION}'");
-                continue;
-            }
-
-            if ((meta.flags & Metadata.RELOCATABLE) != Metadata.RELOCATABLE)
-            {
-                Report.PrintReport(path, "Object is not relocatable");
-                continue;
-            }
-
-            RelocatableMetadata relocatable = Loader.ReadRelocatableHeader(ref reader);
-            ObjectUnit unit = new ObjectUnit();
-
-            for (int i = 0; i < relocatable.symbolCount; i++)
-            {
-                ushort nameLength = reader.ReadUInt16();
-                string name = Encoding.ASCII.GetString(reader.ReadBytes(nameLength));
-                unit.labels.Add(name, BitConverter.ToUInt64(reader.ReadBytes(8)));
-            }
-
-            for (int i = 0; i < relocatable.missingCount; i++)
-            {
-                ushort nameLength = reader.ReadUInt16();
-                string name = Encoding.ASCII.GetString(reader.ReadBytes(nameLength));
-                unit.unresolved.Add(BitConverter.ToUInt64(reader.ReadBytes(8)), name);
-            }
-
-            for (int i = 0; i < relocatable.addressCount; i++)
-            {
-                unit.addresses.Add(BitConverter.ToUInt64(reader.ReadBytes(8)));
-            }
-
-            for (int i = 0; i < meta.poolSize; i++)
-            {
-                unit.pool.Add(new Word(BitConverter.ToUInt64(reader.ReadBytes(8))), BitConverter.ToUInt16(reader.ReadBytes(2)));
-            }
-
-            for (ulong i = 0; i < meta.programSize; i++)
-            {
-                byte opcode = reader.ReadByte();
-                if (!Opcode.HasOperand(opcode))
+                Section section = Loader.ReadSection(ref reader);
+                if (section != null)
                 {
-                    unit.insts.Add(new Inst(opcode));
-                    continue;
+                    file.Add(section);
                 }
-
-                byte size = reader.ReadByte();
-                if (size == 0)
-                {
-                    unit.insts.Add(new Inst(opcode));
-                    continue;
-                }
-
-                byte[] bytes = new byte[8];
-                for (int j = 0; j < size; j++)
-                {
-                    bytes[j] = reader.ReadByte();
-                }
-                unit.insts.Add(new Inst(opcode, new Word(BitConverter.ToUInt64(bytes))));
             }
 
-            units.Add(unit);
+            units.Add(new ObjectUnit(file, path));
+
             reader.Close();
             reader.Dispose();
         }
@@ -237,17 +181,20 @@ class Program
 
         if (units.Length > 1)
         {
-            Combinder combinder = new Combinder();
+            Combiner combiner = new Combiner();
 
             for (int i = 1; i < units.Length; i++)
             {
-                combinder.Combine(ref baseUnit, units[i]);
+                combiner.Combine(ref baseUnit, units[i]);
             }
         }
 
-        foreach (KeyValuePair<ulong, string> unresolved in baseUnit.unresolved)
+        foreach (MissingSection section in baseUnit.file.sections.Where(section => section.type == Section.TYPE_MISSING).Cast<MissingSection>())
         {
-            Report.PrintReport(baseUnit.path, $"ERROR: Unresolved label '{unresolved.Value}'");
+            foreach (KeyValuePair<string, ulong> pair in section.pool)
+            {
+                Report.PrintReport(baseUnit.path, $"ERROR: Unresolved label '{pair.Value}'");
+            }
         }
 
         if (Report.sentErros)
@@ -255,16 +202,17 @@ class Program
             return;
         }
 
-        BinaryWriter writer = new BinaryWriter(new FileStream(Options.INSTANCE.output, FileMode.OpenOrCreate));
-        Compiler compiler = new Compiler(new[]
-        {
-            baseUnit.insts.ToArray()
-        }, baseUnit.pool, 0);
-        compiler.WriteHeader(ref writer, (byte)(Metadata.EXECUTABLE | (baseUnit.unresolved.Count == 0 ? 0 : Metadata.CONTAINS_ERRORS)));
-        compiler.WritePool(ref writer);
-        compiler.WriteProgram(ref writer);
+        BinFile file = new BinFile(baseUnit.file);
+        file.flags = Metadata.EXECUTABLE;
 
-        writer.Close();
+        FinFile lib = new FinFile(file);
+        MemoryStream result = lib.GetBytes(baseUnit.file.sections.Where(section => section.type is Section.TYPE_PROGRAM or Section.TYPE_POOL));
+        FileStream fileStream = new FileStream(Options.INSTANCE.output, FileMode.OpenOrCreate);
+        result.WriteTo(fileStream);
+        result.Close();
+        result.Dispose();
+        fileStream.Close();
+        fileStream.Dispose();
     }
 
     private static void CombineObjs()
@@ -284,31 +232,27 @@ class Program
 
 
         ObjectUnit baseUnit = units[0];
-        Combinder combinder = new Combinder();
+        Combiner combiner = new Combiner();
 
         for (int i = 1; i < units.Length; i++)
         {
-            combinder.Combine(ref baseUnit, units[i]);
+            combiner.Combine(ref baseUnit, units[i]);
         }
 
-        foreach (KeyValuePair<ulong, string> unresolved in baseUnit.unresolved)
+        foreach (MissingSection section in baseUnit.file.sections.Where(section => section.type == Section.TYPE_MISSING).Cast<MissingSection>())
         {
-            Report.PrintWarning(baseUnit.path, $"WARNING: Unresolved label '{unresolved.Value}'");
+            foreach (KeyValuePair<string, ulong> pair in section.pool)
+            {
+                Report.PrintWarning(baseUnit.path, $"WARNING: Unresolved label '{pair.Value}'");
+            }
         }
+
+        BinFile file = new BinFile(baseUnit.file);
+        file.flags = (byte)(Metadata.RELOCATABLE | (Report.sentWarning || Report.sentErros ? 0 : Metadata.CONTAINS_ERRORS));
+        file.AddRange(baseUnit.file.sections);
 
         BinaryWriter writer = new BinaryWriter(new FileStream(Options.INSTANCE.output, FileMode.OpenOrCreate));
-        Compiler compiler = new Compiler(new[]
-        {
-            baseUnit.insts.ToArray()
-        }, baseUnit.pool, 0);
-        compiler.WriteHeader(ref writer, (byte)(Metadata.RELOCATABLE | (baseUnit.unresolved.Count == 0 ? 0 : Metadata.CONTAINS_ERRORS)));
-        compiler.WriteRelocatableHeader(ref writer, (ushort)baseUnit.labels.Count, (ushort)baseUnit.unresolved.Count, (ushort)baseUnit.addresses.Count);
-        compiler.WriteSymbols(ref writer, baseUnit.labels);
-        compiler.WriteSymbols(ref writer, baseUnit.unresolved);
-        compiler.WriteAddresses(ref writer, baseUnit.addresses.ToArray());
-        compiler.WritePool(ref writer);
-        compiler.WriteProgram(ref writer);
-
+        writer.Write(file.ToBytes());
         writer.Close();
     }
 
@@ -325,17 +269,20 @@ class Program
 
         if (units.Length > 1)
         {
-            Combinder combinder = new Combinder();
+            Combiner combiner = new Combiner();
 
             for (int i = 1; i < units.Length; i++)
             {
-                combinder.Combine(ref baseUnit, units[i]);
+                combiner.Combine(ref baseUnit, units[i]);
             }
         }
 
-        foreach (KeyValuePair<ulong, string> unresolved in baseUnit.unresolved)
+        foreach (MissingSection section in baseUnit.file.sections.Where(section => section.type == Section.TYPE_MISSING).Cast<MissingSection>())
         {
-            Report.PrintReport(baseUnit.path, $"ERROR: Unresolved label '{unresolved.Value}'");
+            foreach (KeyValuePair<string, ulong> pair in section.pool)
+            {
+                Report.PrintReport(baseUnit.path, $"ERROR: Unresolved label '{pair.Value}'");
+            }
         }
 
         if (Report.sentErros)
@@ -343,16 +290,18 @@ class Program
             return;
         }
 
-        BinaryWriter writer = new BinaryWriter(new FileStream(Options.INSTANCE.output, FileMode.OpenOrCreate));
-        Compiler compiler = new Compiler(new[]
-        {
-            baseUnit.insts.ToArray()
-        }, baseUnit.pool, 0, (uint)baseUnit.labels.Count);
-        compiler.WriteHeader(ref writer, Metadata.LIBRARY);
-        compiler.WritePool(ref writer);
-        compiler.WriteProgram(ref writer);
-        compiler.WriteSymbols(ref writer, baseUnit.labels);
-        writer.Close();
+
+        BinFile file = new BinFile(baseUnit.file);
+        file.flags = Metadata.LIBRARY;
+        FinFile lib = new FinFile(file);
+        MemoryStream result =
+            lib.GetBytes(baseUnit.file.sections.Where(section => section.type is Section.TYPE_PROGRAM or Section.TYPE_POOL or Section.TYPE_SYMBOL));
+        FileStream fileStream = new FileStream(Options.INSTANCE.output, FileMode.OpenOrCreate);
+        result.WriteTo(fileStream);
+        result.Close();
+        result.Dispose();
+        fileStream.Close();
+        fileStream.Dispose();
     }
 
     private static CodeUnit[] CreateCodeUnits()
@@ -399,84 +348,105 @@ class Program
     private static void CompileASMToExecutable()
     {
         CodeUnit[] units = CreateCodeUnits();
-        List<Inst[]> insts = new List<Inst[]>();
-        Dictionary<Word, ushort> pool = new Dictionary<Word, ushort>();
-        ulong entryPoint = 0;
+        BinFile file = new BinFile();
+        file.magic = new[]
+        {
+            '.', 'C', 'F'
+        };
+        file.version = Metadata.CURRENT_VERSION;
+        file.flags = Metadata.EXECUTABLE;
 
         foreach (CodeUnit unit in units)
         {
+            ProgramSection programSection = new ProgramSection();
+            PoolSection poolSection = new PoolSection();
+
             foreach (KeyValuePair<ulong, Token> unresolved in unit.unresolved)
             {
                 Report.PrintReport(unit.source, unresolved.Value, $"Unresolved label '{unresolved.Value.text}'");
             }
-            insts.Add(unit.insts.ToArray());
+            programSection.program.AddRange(unit.insts);
             foreach (KeyValuePair<Word, ushort> item in unit.pool)
             {
-                pool.Add(item.Key, item.Value);
+                poolSection.pool.Add(item.Key, item.Value);
             }
 
             if (unit.labels.TryGetValue(Options.INSTANCE.entryPoint, out ulong value))
             {
-                entryPoint = value;
+                file.entryPoint = value;
             }
+            file.Add(programSection);
+            file.Add(poolSection);
         }
 
         if (!Report.sentErros)
         {
-            Compiler compiler = new Compiler(insts.ToArray(), pool, entryPoint);
-            BinaryWriter writer = new BinaryWriter(new FileStream(Options.INSTANCE.output, FileMode.OpenOrCreate));
-            compiler.WriteHeader(ref writer, Metadata.EXECUTABLE);
-            compiler.WritePool(ref writer);
-            compiler.WriteProgram(ref writer);
-            writer.Close();
+            FinFile lib = new FinFile(file);
+            MemoryStream result = lib.GetBytes(file.sections);
+            FileStream fileStream = new FileStream(Options.INSTANCE.output, FileMode.OpenOrCreate);
+            result.WriteTo(fileStream);
+            result.Close();
+            result.Dispose();
+            fileStream.Close();
+            fileStream.Dispose();
         }
     }
 
     private static void CompileASMToObject()
     {
         CodeUnit[] units = CreateCodeUnits();
-        List<Inst[]> insts = new List<Inst[]>();
-        Dictionary<Word, ushort> pool = new Dictionary<Word, ushort>();
-        Dictionary<string, ulong> labels = new Dictionary<string, ulong>();
-        Dictionary<string, ulong> missing = new Dictionary<string, ulong>();
-        List<ulong> addresses = new List<ulong>();
+        MissingSection missingSection = new MissingSection();
+        SymbolSection symbolSection = new SymbolSection();
+        AddressSection addressSection = new AddressSection();
+
+        BinFile file = new BinFile();
+        file.magic = new[]
+        {
+            '.', 'C', 'F'
+        };
+        file.version = Metadata.CURRENT_VERSION;
 
         foreach (CodeUnit unit in units)
         {
-            foreach (KeyValuePair<string, ulong> label in unit.labels)
+            ProgramSection programSection = new ProgramSection();
+            PoolSection poolSection = new PoolSection();
+
+            foreach (KeyValuePair<string, ulong> item in unit.labels)
             {
-                labels.Add(label.Key, label.Value);
-            }
-            foreach (KeyValuePair<string, ulong> variable in unit.variables)
-            {
-                labels.Add(variable.Key, variable.Value);
+                symbolSection.pool.Add(item.Key, item.Value);
             }
 
-            addresses.AddRange(unit.lookups);
+            addressSection.addresses.AddRange(unit.lookups);
 
             foreach (KeyValuePair<ulong, Token> unresolved in unit.unresolved)
             {
-                missing.Add(unresolved.Value.text, unresolved.Key);
+                missingSection.pool.Add(unresolved.Value.text, unresolved.Key);
                 Report.PrintWarning(unit.source, unresolved.Value, $"WARNING: Unresolved label '{unresolved.Value.text}'");
             }
-            insts.Add(unit.insts.ToArray());
+            programSection.program.AddRange(unit.insts);
             foreach (KeyValuePair<Word, ushort> item in unit.pool)
             {
-                pool.Add(item.Key, item.Value);
+                poolSection.pool.Add(item.Key, item.Value);
             }
+
+            file.Add(programSection);
+            file.Add(poolSection);
         }
+
+        file.Add(missingSection);
+        file.Add(addressSection);
+        file.Add(symbolSection);
 
         if (!Report.sentErros)
         {
-            Compiler compiler = new Compiler(insts.ToArray(), pool, 0);
+            file.flags = (byte)(Metadata.RELOCATABLE | (Report.sentWarning ? Metadata.CONTAINS_ERRORS : 0));
             BinaryWriter writer = new BinaryWriter(new FileStream(Options.INSTANCE.output, FileMode.OpenOrCreate));
-            compiler.WriteHeader(ref writer, (byte)(Metadata.RELOCATABLE | (Report.sentWarning ? Metadata.CONTAINS_ERRORS : 0)));
-            compiler.WriteRelocatableHeader(ref writer, Convert.ToUInt16(labels.Count), Convert.ToUInt16(missing.Count), Convert.ToUInt16(addresses.Count));
-            compiler.WriteSymbols(ref writer, labels);
-            compiler.WriteSymbols(ref writer, missing);
-            compiler.WriteAddresses(ref writer, addresses.ToArray());
-            compiler.WritePool(ref writer);
-            compiler.WriteProgram(ref writer);
+            if (symbolSection.pool.TryGetValue(Options.INSTANCE.entryPoint, out ulong value))
+            {
+                file.entryPoint = value;
+            }
+
+            writer.Write(file.ToBytes());
             writer.Close();
         }
     }
@@ -484,44 +454,52 @@ class Program
     private static void CompileASMToLibrary()
     {
         CodeUnit[] units = CreateCodeUnits();
-        List<Inst[]> insts = new List<Inst[]>();
-        Dictionary<Word, ushort> pool = new Dictionary<Word, ushort>();
-        ulong entryPoint = 0;
+        BinFile file = new BinFile();
+        file.magic = new[]
+        {
+            '.', 'C', 'F'
+        };
+        file.version = Metadata.CURRENT_VERSION;
+        file.flags = Metadata.LIBRARY;
 
-        Dictionary<string, ulong> labels = new Dictionary<string, ulong>();
+        SymbolSection symbolSection = new SymbolSection();
 
         foreach (CodeUnit unit in units)
         {
+            ProgramSection programSection = new ProgramSection();
+            PoolSection poolSection = new PoolSection();
+
             foreach (KeyValuePair<ulong, Token> unresolved in unit.unresolved)
             {
                 Report.PrintReport(unit.source, unresolved.Value, $"Unresolved label '{unresolved.Value.text}'");
             }
-            insts.Add(unit.insts.ToArray());
+            programSection.program.AddRange(unit.insts);
             foreach (KeyValuePair<Word, ushort> item in unit.pool)
             {
-                pool.Add(item.Key, item.Value);
-            }
-
-            if (unit.labels.TryGetValue(Options.INSTANCE.entryPoint, out ulong value))
-            {
-                entryPoint = value;
+                poolSection.pool.Add(item.Key, item.Value);
             }
 
             foreach (KeyValuePair<string, ulong> label in unit.labels)
             {
-                labels.Add(label.Key, label.Value);
+                symbolSection.pool.Add(label.Key, label.Value);
             }
+
+            file.Add(programSection);
+            file.Add(poolSection);
         }
+
+        file.Add(symbolSection);
 
         if (!Report.sentErros)
         {
-            Compiler compiler = new Compiler(insts.ToArray(), pool, entryPoint, (uint)labels.Count);
-            BinaryWriter writer = new BinaryWriter(new FileStream(Options.INSTANCE.output, FileMode.OpenOrCreate));
-            compiler.WriteHeader(ref writer, Metadata.LIBRARY);
-            compiler.WritePool(ref writer);
-            compiler.WriteProgram(ref writer);
-            compiler.WriteSymbols(ref writer, labels);
-            writer.Close();
+            FinFile lib = new FinFile(file);
+            MemoryStream result = lib.GetBytes(file.sections);
+            FileStream fileStream = new FileStream(Options.INSTANCE.output, FileMode.OpenOrCreate);
+            result.WriteTo(fileStream);
+            result.Close();
+            result.Dispose();
+            fileStream.Close();
+            fileStream.Dispose();
         }
     }
 }

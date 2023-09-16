@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using CodeFusion.Format;
 
 namespace CodeFusion.VM;
 
@@ -16,9 +17,8 @@ public static class Loader
             },
             version = BitConverter.ToUInt16(metadata, Metadata.VERSION_OFFSET),
             flags = metadata[Metadata.FLAGS_OFFSET],
-            poolSize = BitConverter.ToUInt16(metadata, Metadata.POOL_OFFSET),
-            programSize = BitConverter.ToUInt64(metadata, Metadata.PROGRAM_OFFSET),
-            symbolSize = BitConverter.ToUInt32(metadata, Metadata.SYMBOL_OFFSET)
+            entryPoint = BitConverter.ToUInt64(metadata, Metadata.ENTRYPOINT_OFFSET),
+            sectionCount = metadata[Metadata.SECTION_COUNT_OFFSET]
         };
 
         if (meta.magic[0] != '.' || meta.magic[1] != 'C' || meta.magic[2] != 'F')
@@ -35,15 +35,105 @@ public static class Loader
         return meta;
     }
 
-    public static RelocatableMetadata ReadRelocatableHeader(ref BinaryReader reader)
+    public static Section ReadSection(ref BinaryReader reader)
     {
-        byte[] metadata = reader.ReadBytes(RelocatableMetadata.METADATA_SIZE);
-        RelocatableMetadata meta = new RelocatableMetadata
+        byte type = reader.ReadByte();
+        uint lenght = reader.ReadUInt32();
+        byte[] content = reader.ReadBytes((int)lenght);
+        switch (type)
         {
-            symbolCount = BitConverter.ToUInt16(metadata, RelocatableMetadata.SYMBOL_OFFSET),
-            missingCount = BitConverter.ToUInt16(metadata, RelocatableMetadata.MISSING_OFFSET),
-            addressCount = BitConverter.ToUInt16(metadata, RelocatableMetadata.ADDRESS_OFFSET)
-        };
-        return meta;
+            case Section.TYPE_POOL:
+            {
+                PoolSection poolSection = new PoolSection();
+                poolSection.lenght = lenght;
+                int i = 0;
+                while (i < lenght)
+                {
+                    poolSection.pool.Add(new Word(BitConverter.ToUInt64(content, i)), BitConverter.ToUInt16(content, i + 8));
+                    i += 10;
+                }
+                return poolSection;
+            }
+            case Section.TYPE_PROGRAM:
+            {
+                ProgramSection programSection = new ProgramSection();
+                programSection.lenght = lenght;
+                int i = 0;
+                while (i < lenght)
+                {
+                    byte opcode = content[i++];
+                    if (!Opcode.HasOperand(opcode))
+                    {
+                        programSection.program.Add(new Inst(opcode));
+                        continue;
+                    }
+                    byte size = content[i++];
+                    if (size == 0)
+                    {
+                        programSection.program.Add(new Inst(opcode));
+                        continue;
+                    }
+                    byte[] bytes = new byte[8];
+                    for (int j = 0; j < size; j++, i++)
+                    {
+                        bytes[j] = content[i];
+                    }
+                    programSection.program.Add(new Inst(opcode, new Word(BitConverter.ToUInt64(bytes))));
+                }
+                return programSection;
+            }
+            case Section.TYPE_SYMBOL:
+            {
+                SymbolSection symbolSection = new SymbolSection();
+                symbolSection.lenght = lenght;
+                int i = 0;
+                while (i < lenght)
+                {
+                    ushort size = BitConverter.ToUInt16(content, i);
+                    i += 2;
+                    string name = "";
+                    for (int j = 0; j < size; j++, i++)
+                    {
+                        name += (char)content[i];
+                    }
+                    symbolSection.pool.Add(name, BitConverter.ToUInt64(content, i));
+                    i += 8;
+                }
+                return symbolSection;
+            }
+            case Section.TYPE_MISSING:
+            {
+                MissingSection missingSection = new MissingSection();
+                missingSection.lenght = lenght;
+                int i = 0;
+                while (i < lenght)
+                {
+                    ushort size = BitConverter.ToUInt16(content, i);
+                    i += 2;
+                    string name = "";
+                    for (int j = 0; j < size; j++, i++)
+                    {
+                        name += (char)content[i];
+                    }
+                    missingSection.pool.Add(name, BitConverter.ToUInt64(content, i));
+                    i += 8;
+                }
+                return missingSection;
+            }
+            case Section.TYPE_ADDRESS:
+            {
+                AddressSection addressSection = new AddressSection();
+                addressSection.lenght = lenght;
+                int i = 0;
+                while (i < lenght)
+                {
+                    addressSection.addresses.Add(BitConverter.ToUInt64(content, i));
+                    i += 8;
+                }
+                return addressSection;
+            }
+            default:
+                return null;
+        }
     }
 }
