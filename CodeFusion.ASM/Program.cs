@@ -172,7 +172,7 @@ static class Program
     {
         ObjectUnit[] units = CreateObjectUnits();
 
-        if (Report.sentErros)
+        if (Report.sentErrors)
         {
             return;
         }
@@ -197,7 +197,7 @@ static class Program
             }
         }
 
-        if (Report.sentErros)
+        if (Report.sentErrors)
         {
             return;
         }
@@ -206,7 +206,7 @@ static class Program
         file.flags = Metadata.EXECUTABLE;
 
         FinFile lib = new FinFile(file);
-        MemoryStream result = lib.GetBytes(baseUnit.file.sections.Where(section => section.type is Section.TYPE_PROGRAM or Section.TYPE_POOL));
+        MemoryStream result = lib.GetBytes(baseUnit.file.sections.Where(section => section.type is Section.TYPE_PROGRAM or Section.TYPE_POOL or Section.TYPE_MEMORY));
         FileStream fileStream = new FileStream(Options.INSTANCE.output, FileMode.OpenOrCreate);
         result.WriteTo(fileStream);
         result.Close();
@@ -219,7 +219,7 @@ static class Program
     {
         ObjectUnit[] units = CreateObjectUnits();
 
-        if (Report.sentErros)
+        if (Report.sentErrors)
         {
             return;
         }
@@ -248,7 +248,7 @@ static class Program
         }
 
         BinFile file = new BinFile(baseUnit.file);
-        file.flags = (byte)(Metadata.RELOCATABLE | (Report.sentWarning || Report.sentErros ? 0 : Metadata.CONTAINS_ERRORS));
+        file.flags = (byte)(Metadata.RELOCATABLE | (Report.sentWarning || Report.sentErrors ? 0 : Metadata.CONTAINS_ERRORS));
         file.AddRange(baseUnit.file.sections);
 
         BinaryWriter writer = new BinaryWriter(new FileStream(Options.INSTANCE.output, FileMode.OpenOrCreate));
@@ -260,7 +260,7 @@ static class Program
     {
         ObjectUnit[] units = CreateObjectUnits();
 
-        if (Report.sentErros)
+        if (Report.sentErrors)
         {
             return;
         }
@@ -285,7 +285,7 @@ static class Program
             }
         }
 
-        if (Report.sentErros)
+        if (Report.sentErrors)
         {
             return;
         }
@@ -295,7 +295,7 @@ static class Program
         file.flags = Metadata.LIBRARY;
         FinFile lib = new FinFile(file);
         MemoryStream result =
-            lib.GetBytes(baseUnit.file.sections.Where(section => section.type is Section.TYPE_PROGRAM or Section.TYPE_POOL or Section.TYPE_SYMBOL));
+            lib.GetBytes(baseUnit.file.sections.Where(section => section.type is Section.TYPE_PROGRAM or Section.TYPE_POOL or Section.TYPE_SYMBOL or Section.TYPE_MEMORY));
         FileStream fileStream = new FileStream(Options.INSTANCE.output, FileMode.OpenOrCreate);
         result.WriteTo(fileStream);
         result.Close();
@@ -328,6 +328,7 @@ static class Program
                         inst.operand = new Word(value);
                         unit.insts[(int)unresolved.Key] = inst;
                         unit.unresolved.Remove(unresolved.Key);
+                        unit.lookups.Add(unit.addressOffset + unresolved.Key);
                         break;
                     }
                     if (item.variables.TryGetValue(unresolved.Value.text, out value))
@@ -336,6 +337,15 @@ static class Program
                         inst.operand = new Word(value);
                         unit.insts[(int)unresolved.Key] = inst;
                         unit.unresolved.Remove(unresolved.Key);
+                        break;
+                    }
+                    if (item.memoryLabels.TryGetValue(unresolved.Value.text, out value))
+                    {
+                        Inst inst = unit.insts[(int)unresolved.Key];
+                        inst.operand = new Word(value);
+                        unit.insts[(int)unresolved.Key] = inst;
+                        unit.unresolved.Remove(unresolved.Key);
+                        unit.memoryLookups.Add(unit.addressOffset + unresolved.Key);
                         break;
                     }
                 }
@@ -360,6 +370,7 @@ static class Program
         {
             ProgramSection programSection = new ProgramSection();
             PoolSection poolSection = new PoolSection();
+            MemorySection memorySection = new MemorySection();
 
             foreach (KeyValuePair<ulong, Token> unresolved in unit.unresolved)
             {
@@ -371,15 +382,18 @@ static class Program
                 poolSection.pool.Add(item.Key, item.Value);
             }
 
+            memorySection.data.AddRange(unit.memory);
+
             if (unit.labels.TryGetValue(Options.INSTANCE.entryPoint, out ulong value))
             {
                 file.entryPoint = value;
             }
             file.Add(programSection);
             file.Add(poolSection);
+            file.Add(memorySection);
         }
 
-        if (!Report.sentErros)
+        if (!Report.sentErrors)
         {
             FinFile lib = new FinFile(file);
             MemoryStream result = lib.GetBytes(file.sections);
@@ -398,6 +412,8 @@ static class Program
         MissingSection missingSection = new MissingSection();
         SymbolSection symbolSection = new SymbolSection();
         AddressSection addressSection = new AddressSection();
+        MemorySymbolSection memorySymbolSection = new MemorySymbolSection();
+        MemoryAddressSection memoryAddressSection = new MemoryAddressSection();
 
         BinFile file = new BinFile();
         file.magic = new[]
@@ -410,13 +426,19 @@ static class Program
         {
             ProgramSection programSection = new ProgramSection();
             PoolSection poolSection = new PoolSection();
+            MemorySection memorySection = new MemorySection();
 
             foreach (KeyValuePair<string, ulong> item in unit.labels)
             {
                 symbolSection.pool.Add(item.Key, item.Value);
             }
+            foreach (KeyValuePair<string, ulong> item in unit.memoryLabels)
+            {
+                memorySymbolSection.pool.Add(item.Key, item.Value);
+            }
 
             addressSection.addresses.AddRange(unit.lookups);
+            memoryAddressSection.addresses.AddRange(unit.lookups);
 
             foreach (KeyValuePair<ulong, Token> unresolved in unit.unresolved)
             {
@@ -424,20 +446,26 @@ static class Program
                 Report.PrintWarning(unit.source, unresolved.Value, $"WARNING: Unresolved label '{unresolved.Value.text}'");
             }
             programSection.program.AddRange(unit.insts);
+            memorySection.data.AddRange(unit.memory);
+
             foreach (KeyValuePair<Word, ushort> item in unit.pool)
             {
                 poolSection.pool.Add(item.Key, item.Value);
             }
 
             file.Add(programSection);
+            Console.WriteLine(programSection.program.Count);
             file.Add(poolSection);
+            file.Add(memorySection);
         }
 
         file.Add(missingSection);
-        file.Add(addressSection);
         file.Add(symbolSection);
+        file.Add(addressSection);
+        file.Add(memorySymbolSection);
+        file.Add(memoryAddressSection);
 
-        if (!Report.sentErros)
+        if (!Report.sentErrors)
         {
             file.flags = (byte)(Metadata.RELOCATABLE | (Report.sentWarning ? Metadata.CONTAINS_ERRORS : 0));
             BinaryWriter writer = new BinaryWriter(new FileStream(Options.INSTANCE.output, FileMode.OpenOrCreate));
@@ -468,12 +496,14 @@ static class Program
         {
             ProgramSection programSection = new ProgramSection();
             PoolSection poolSection = new PoolSection();
+            MemorySection memorySection = new MemorySection();
 
             foreach (KeyValuePair<ulong, Token> unresolved in unit.unresolved)
             {
                 Report.PrintReport(unit.source, unresolved.Value, $"Unresolved label '{unresolved.Value.text}'");
             }
             programSection.program.AddRange(unit.insts);
+            memorySection.data.AddRange(unit.memory);
             foreach (KeyValuePair<Word, ushort> item in unit.pool)
             {
                 poolSection.pool.Add(item.Key, item.Value);
@@ -486,11 +516,12 @@ static class Program
 
             file.Add(programSection);
             file.Add(poolSection);
+            file.Add(memorySection);
         }
 
         file.Add(symbolSection);
 
-        if (!Report.sentErros)
+        if (!Report.sentErrors)
         {
             FinFile lib = new FinFile(file);
             MemoryStream result = lib.GetBytes(file.sections);

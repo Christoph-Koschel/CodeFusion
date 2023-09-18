@@ -40,6 +40,8 @@ public static class Loader
         byte type = reader.ReadByte();
         uint lenght = reader.ReadUInt32();
         byte[] content = reader.ReadBytes((int)lenght);
+        Console.WriteLine("Type"+type);
+        Console.WriteLine("Length"+lenght);
         switch (type)
         {
             case Section.TYPE_POOL:
@@ -123,6 +125,44 @@ public static class Loader
             case Section.TYPE_ADDRESS:
             {
                 AddressSection addressSection = new AddressSection();
+                addressSection.lenght = lenght;
+                int i = 0;
+                while (i < lenght)
+                {
+                    addressSection.addresses.Add(BitConverter.ToUInt64(content, i));
+                    i += 8;
+                }
+                return addressSection;
+            }
+            case Section.TYPE_MEMORY:
+            {
+                MemorySection memorySection = new MemorySection();
+                memorySection.lenght = lenght;
+                memorySection.data.AddRange(content);
+                return memorySection;
+            }
+            case Section.TYPE_MEMORY_SYMBOL:
+            {
+                MemorySymbolSection symbolSection = new MemorySymbolSection();
+                symbolSection.lenght = lenght;
+                int i = 0;
+                while (i < lenght)
+                {
+                    ushort size = BitConverter.ToUInt16(content, i);
+                    i += 2;
+                    string name = "";
+                    for (int j = 0; j < size; j++, i++)
+                    {
+                        name += (char)content[i];
+                    }
+                    symbolSection.pool.Add(name, BitConverter.ToUInt64(content, i));
+                    i += 8;
+                }
+                return symbolSection;
+            }
+            case Section.TYPE_MEMORY_ADDRESS:
+            {
+                MemoryAddressSection addressSection = new MemoryAddressSection();
                 addressSection.lenght = lenght;
                 int i = 0;
                 while (i < lenght)

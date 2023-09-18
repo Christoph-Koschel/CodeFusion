@@ -28,6 +28,7 @@
 }
 
 #define CF_PROGRAM_SIZE(cf) (cf->libraries[cf->program_pool].program_size)
+#define CF_MEMORY_SIZE(cf) (cf->libraries[cf->program_pool].memory_size)
 #define CF_PROGRAM(cf) (cf->libraries[cf->program_pool].program)
 #define CF_ADDR_POOL(cf) (cf->libraries[cf->program_pool].address_pool)
 
@@ -285,6 +286,16 @@ Status cf_execute_inst(CF_Machine *cf) {
                 return STATUS_ILLEGAL_ACCESS;
             }
             cf->program_counter = cf->stack[--cf->stack_size].as_u64 + 1;
+            return STATUS_OK;
+        case INST_LOAD_MEMORY:
+            if (cf->stack_size >= STACK_CAPACITY) {
+                return STATUS_STACK_OVERFLOW;
+            }
+            printf("Load memory address %"PRIu64" of size %"PRIu64"\n", inst.operand.as_u64, CF_MEMORY_SIZE(cf));
+            if (inst.operand.as_u64 >= CF_MEMORY_SIZE(cf)) {
+                return STATUS_ILLEGAL_ACCESS;
+            }
+            cf->stack[cf->stack_size++] = WORD_PTR(cf->libraries[cf->program_pool].memory + inst.operand.as_u64);
             return STATUS_OK;
     }
 

@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include "cf/CodeFusion.h"
 
+#define SLOW
+
 CF_Machine cf = {0};
 
 extern char _binary_cf_code_bin_start[];
@@ -14,6 +16,7 @@ int main(void) {
     main_program.address_pool = create_hash_map(metadata.pool_size);
     cf_load_pool(&buff, &metadata, main_program.address_pool);
     cf_load_program(&buff, &metadata, &main_program);
+    cf_load_memory(&buff, &metadata, &main_program);
 
     cf.libraries[cf.library_size++] = main_program;
 

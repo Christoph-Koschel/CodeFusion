@@ -23,4 +23,5 @@ OBJECT_EXPORT void init(CF_Library *lib) {
     cf_load_pool(&buff, &metadata, lib->address_pool);
     cf_load_program(&buff, &metadata, lib);
     cf_load_symbols(&buff, &metadata, lib);
+    cf_load_memory(&buff, &metadata, lib);
 }

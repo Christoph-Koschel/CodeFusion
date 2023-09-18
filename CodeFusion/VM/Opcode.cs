@@ -204,6 +204,8 @@ public static class Opcode
     public const byte VCALL = 34;
     public const byte RET = 35;
 
+    public const byte LOAD_MEMORY = 36;
+
     public static bool HasOperand(byte opcode)
     {
         switch (opcode)
@@ -223,6 +225,7 @@ public static class Opcode
             case JMP_ZERO:
             case JMP_NOT_ZERO:
             case CALL:
+            case LOAD_MEMORY:
                 return true;
             default:
                 return false;

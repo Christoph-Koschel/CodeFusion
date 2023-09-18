@@ -19,6 +19,7 @@ typedef struct {
     uint64_t pool_size;
     uint64_t program_size;
     uint64_t symbol_size;
+    uint64_t memory_size;
 } Metadata;
 
 void cf_load_metadata(void **buff, Metadata *metadata);
@@ -28,5 +29,7 @@ void cf_load_pool(void **buff, Metadata *metadata, HashMap *pool);
 void cf_load_program(void **buff, Metadata *metadata, CF_Library *library);
 
 void cf_load_symbols(void **buff, Metadata *metadata, CF_Library *library);
+
+void cf_load_memory(void **buff, Metadata *metadata, CF_Library *library);
 
 #endif

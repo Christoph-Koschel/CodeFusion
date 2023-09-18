@@ -46,7 +46,7 @@ $(LOADER_O): $(LOADERS_OBJ)
 	$(LD) -r $^ -o $(LOADER_O)
 
 %.o: %.c
-	$(CC) -c $< -o $@
+	$(CC) $(CFLAGS) -c $< -o $@
 
 clean:
 	rm -f  $(IMAGES_OBJ) $(TABLES_OBJ)

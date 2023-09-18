@@ -17,6 +17,7 @@ int cf_inst_has_operand(uint8_t opcode) {
         case INST_JMP_ZERO:
         case INST_JMP_NOT_ZERO:
         case INST_CALL:
+        case INST_LOAD_MEMORY:
             return 1;
         default:
             return 0;

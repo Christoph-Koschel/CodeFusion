@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using CodeFusion.ASM.Lexing;
 using CodeFusion.VM;
 
@@ -7,9 +8,12 @@ namespace CodeFusion.ASM.Parsing;
 
 class Parser
 {
+    private const int MEMORY_SECTION = 0;
+    private const int PROGRAM_SECTION = 1;
     private readonly SourceFile source;
     private readonly Token[] tokens;
     private int position;
+    private int section = PROGRAM_SECTION;
 
     private CodeUnit codeUnit;
 
@@ -49,6 +53,7 @@ class Parser
         if (current.type != type)
         {
             Report.PrintReport(source, current, $"Unexpected token '{current.type}' expected '{type}'");
+            position++;
             return new Token(type, "", current.span);
         }
         Token token = current;
@@ -63,10 +68,36 @@ class Parser
 
         while (!atEnd)
         {
-            Inst inst = ParseInst();
-            if (inst.opcode != Opcode.NOP)
+            if (current.type == TokenType.HASH)
             {
-                codeUnit.insts.Add(inst);
+                Match(TokenType.HASH);
+                Token identifier = Match(TokenType.IDENTIFIER);
+                if (identifier.text == "program")
+                {
+                    section = PROGRAM_SECTION;
+                }
+                else if (identifier.text == "memory")
+                {
+                    section = MEMORY_SECTION;
+                }
+                else
+                {
+                    Report.PrintWarning(source, identifier, $"Unknown section '{identifier.text}'", false);
+                }
+                continue;
+            }
+
+            if (section == PROGRAM_SECTION)
+            {
+                Inst inst = ParseInst();
+                if (inst.opcode != Opcode.NOP)
+                {
+                    codeUnit.insts.Add(inst);
+                }
+            }
+            else if (section == MEMORY_SECTION)
+            {
+                ParseMemory();
             }
         }
 
@@ -142,6 +173,11 @@ class Parser
                     codeUnit.lookups.Add(codeUnit.addressOffset + Convert.ToUInt32(codeUnit.insts.Count));
                     return new Inst(opcode, new Word(value));
                 }
+                if (codeUnit.memoryLabels.TryGetValue(labelToken.text, out value))
+                {
+                    codeUnit.memoryLookups.Add(codeUnit.addressOffset + Convert.ToUInt32(codeUnit.insts.Count));
+                    return new Inst(opcode, new Word(value));
+                }
                 if (codeUnit.variables.TryGetValue(labelToken.text, out value))
                 {
                     return new Inst(opcode, new Word(value));
@@ -151,6 +187,59 @@ class Parser
         }
 
         return new Inst(opcode);
+    }
+
+    private void ParseMemory()
+    {
+        if (atEnd)
+        {
+            return;
+        }
+
+        Token label = Match(TokenType.IDENTIFIER);
+        Match(TokenType.COLON);
+        codeUnit.memoryLabels.Add(label.text, (ulong)codeUnit.memory.Count);
+
+        List<Token> tokens = new List<Token>();
+
+        do
+        {
+            if (current.type == TokenType.COMMA)
+            {
+                Match(TokenType.COMMA);
+            }
+            if (current.type != TokenType.INT && current.type != TokenType.STRING)
+            {
+                Report.PrintReport(source, current, $"Unexpected token '{current.type}' expected '{TokenType.INT}' or '{TokenType.STRING}'");
+            }
+
+            tokens.Add(Match(current.type));
+        } while (current.type != TokenType.EOF && current.type == TokenType.COMMA);
+
+        foreach (Token token in tokens)
+        {
+            if (token.type == TokenType.INT)
+            {
+                ulong value = ulong.Parse(token.text);
+                ulong maxValue = 0xFF;
+                byte size = 1;
+                while (value > maxValue)
+                {
+                    maxValue = maxValue << 8 | 0xFF;
+                    size++;
+                }
+
+                byte[] bytes = BitConverter.GetBytes(value);
+                for (int j = 0; j < size; j++)
+                {
+                    codeUnit.memory.Add(bytes[j]);
+                }
+            }
+            else
+            {
+                codeUnit.memory.AddRange(token.text.Select(c => (byte)c));
+            }
+        }
     }
 
     private byte GetOpcode(Token token)
@@ -229,6 +318,8 @@ class Parser
                 return Opcode.VCALL;
             case "ret":
                 return Opcode.RET;
+            case "loadmemory":
+                return Opcode.LOAD_MEMORY;
         }
 
         Report.PrintReport(source, token, $"Undefined instruction '{token.text}'");

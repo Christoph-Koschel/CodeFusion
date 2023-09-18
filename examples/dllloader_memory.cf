@@ -1,4 +1,4 @@
-#memory
+﻿#memory
 
 path: "./a.dll", 0
 name: "exit", 0

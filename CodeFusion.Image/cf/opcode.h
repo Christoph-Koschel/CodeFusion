@@ -39,6 +39,7 @@
 #define INST_CALL ((uint8_t)33)
 #define INST_VCALL ((uint8_t)34)
 #define INST_RET ((uint8_t)35)
+#define INST_LOAD_MEMORY ((uint8_t)36)
 
 int cf_inst_has_operand(uint8_t opcode);
 

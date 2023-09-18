@@ -6,8 +6,11 @@ public enum TokenType
     EOF,
     WHITESPACE,
     INT,
+    STRING,
     IDENTIFIER,
     COLON,
     LBRACKET,
-    RBRACKET
+    RBRACKET,
+    HASH,
+    COMMA
 }

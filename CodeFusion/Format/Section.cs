@@ -14,6 +14,9 @@ public abstract class Section
     public const byte TYPE_SYMBOL = 2;
     public const byte TYPE_MISSING = 3;
     public const byte TYPE_ADDRESS = 4;
+    public const byte TYPE_MEMORY = 5;
+    public const byte TYPE_MEMORY_SYMBOL = 6;
+    public const byte TYPE_MEMORY_ADDRESS = 7;
 
     #endregion
 }

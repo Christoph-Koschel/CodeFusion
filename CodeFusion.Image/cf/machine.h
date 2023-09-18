@@ -47,6 +47,9 @@ typedef struct {
     CF_Symbol *symbols;
     uint32_t symbol_size;
 
+    void *memory;
+    uint64_t memory_size;
+
     const char *path;
     void *handler;
 } CF_Library;

@@ -21,6 +21,7 @@ void cf_load_metadata(void **buff, Metadata *metadata) {
     read_buff(&metadata->pool_size, sizeof(metadata->pool_size), 1, buff);
     read_buff(&metadata->program_size, sizeof(metadata->program_size), 1, buff);
     read_buff(&metadata->symbol_size, sizeof(metadata->symbol_size), 1, buff);
+    read_buff(&metadata->memory_size, sizeof(metadata->memory_size), 1, buff);
 
     if (metadata->magic[0] != '.' || metadata->magic[1] != 'C' || metadata->magic[2] != 'F') {
         fprintf(stderr, "Program has not the correct file format\n");
@@ -77,4 +78,9 @@ void cf_load_symbols(void **buff, Metadata *metadata, CF_Library *library) {
                 .address = address
         });
     }
+}
+
+void cf_load_memory(void **buff, Metadata *metadata, CF_Library *library) {
+    library->memory_size = metadata->memory_size;
+    library->memory = *buff;
 }

@@ -29,4 +29,20 @@ public struct ObjectUnit
             return length;
         }
     }
+
+    public ulong memoryLength
+    {
+        get
+        {
+            ulong length = 0;
+            foreach (Section section in file.sections)
+            {
+                if (section is MemorySection memorySection)
+                {
+                    length += memorySection.lenght;
+                }
+            }
+            return length;
+        }
+    }
 }

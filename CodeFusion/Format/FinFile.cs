@@ -16,6 +16,7 @@ public class FinFile
     public ulong poolCount;
     public ulong programCount;
     public ulong symbolCount;
+    public ulong memoryCount;
 
 
     public FinFile(BinFile file)
@@ -31,10 +32,12 @@ public class FinFile
         this.poolCount = 0;
         this.programCount = 0;
         this.symbolCount = 0;
+        this.memoryCount = 0;
 
         MemoryStream programStream = new MemoryStream();
         MemoryStream poolStream = new MemoryStream();
         MemoryStream symbolStream = new MemoryStream();
+        MemoryStream memoryStream = new MemoryStream();
 
         foreach (Section section in sections)
         {
@@ -95,6 +98,12 @@ public class FinFile
                     symbolStream.Write(BitConverter.GetBytes(value));
                 }
             }
+            else if (section.type == Section.TYPE_MEMORY)
+            {
+                MemorySection memorySection = (MemorySection)section;
+                memoryCount += (ulong)memorySection.data.Count;
+                memoryStream.Write(memorySection.data.ToArray());
+            }
         }
 
         MemoryStream result = new MemoryStream();
@@ -105,9 +114,11 @@ public class FinFile
         result.Write(BitConverter.GetBytes(poolCount));
         result.Write(BitConverter.GetBytes(programCount));
         result.Write(BitConverter.GetBytes(symbolCount));
+        result.Write(BitConverter.GetBytes(memoryCount));
         poolStream.WriteTo(result);
         programStream.WriteTo(result);
         symbolStream.WriteTo(result);
+        memoryStream.WriteTo(result);
 
         poolStream.Close();
         poolStream.Dispose();
@@ -117,6 +128,9 @@ public class FinFile
 
         symbolStream.Close();
         symbolStream.Dispose();
+
+        memoryStream.Close();
+        memoryStream.Dispose();
 
         return result;
     }
