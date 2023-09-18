@@ -40,8 +40,6 @@ public static class Loader
         byte type = reader.ReadByte();
         uint lenght = reader.ReadUInt32();
         byte[] content = reader.ReadBytes((int)lenght);
-        Console.WriteLine("Type"+type);
-        Console.WriteLine("Length"+lenght);
         switch (type)
         {
             case Section.TYPE_POOL:

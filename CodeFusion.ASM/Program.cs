@@ -454,7 +454,6 @@ static class Program
             }
 
             file.Add(programSection);
-            Console.WriteLine(programSection.program.Count);
             file.Add(poolSection);
             file.Add(memorySection);
         }

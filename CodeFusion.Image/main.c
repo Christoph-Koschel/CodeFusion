@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include "cf/CodeFusion.h"
 
-#define SLOW
+//#define SLOW
 
 CF_Machine cf = {0};
 
