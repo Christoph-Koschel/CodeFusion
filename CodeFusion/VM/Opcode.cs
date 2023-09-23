@@ -185,6 +185,31 @@ public static class Opcode
     public const byte FMOD = 27;
     public const byte UMOD = 28;
 
+    public const byte ILESS = 29;
+    public const byte FLESS = 30;
+    public const byte ULESS =  31;
+
+    public const byte ILESS_EQUAL = 32;
+    public const byte FLESS_EQUAL = 33;
+    public const byte ULESS_EQUAL = 34;
+
+    public const byte IGREATER = 35;
+    public const byte FGREATER = 36;
+    public const byte UGREATER = 37;
+
+    public const byte IGREATER_EQUALS = 38;
+    public const byte FGREATER_EQUALS = 39;
+    public const byte UGREATER_EQUALS = 40;
+
+    public const byte EQ = 41;
+    public const byte NEQ = 42;
+
+    public const byte AND = 43;
+    public const byte OR = 44;
+    public const byte XOR = 45;
+    public const byte LSHIFT = 46;
+    public const byte RSHIFT = 47;
+
     /// <summary>
     /// int &lt;code><br /><br />
     /// Interrupt the machine with a specific function code
@@ -194,17 +219,17 @@ public static class Opcode
     ///     int 6 ; Interrupt the machine with the exit code 0, what will also exit the program
     /// </code>
     /// </summary>
-    public const byte INT = 29;
+    public const byte INT = 48;
 
-    public const byte JMP = 30;
-    public const byte JMP_ZERO = 31;
-    public const byte JMP_NOT_ZERO = 32;
+    public const byte JMP = 49;
+    public const byte JMP_ZERO = 50;
+    public const byte JMP_NOT_ZERO = 51;
 
-    public const byte CALL = 33;
-    public const byte VCALL = 34;
-    public const byte RET = 35;
+    public const byte CALL = 52;
+    public const byte VCALL = 53;
+    public const byte RET = 54;
 
-    public const byte LOAD_MEMORY = 36;
+    public const byte LOAD_MEMORY = 55;
 
     public static bool HasOperand(byte opcode)
     {

@@ -206,6 +206,25 @@ Status cf_execute_inst(CF_Machine *cf) {
                 return STATUS_DIVISION_BY_ZERO;
             }
             BINARY_OP(cf, u64, u64, %)
+        case INST_ILESS: BINARY_OP(cf, i64, u64, <)
+        case INST_FLESS: BINARY_OP(cf, f64, u64, <)
+        case INST_ULESS: BINARY_OP(cf, u64, u64, <)
+        case INST_ILESS_EQUAL: BINARY_OP(cf, i64, u64, <=)
+        case INST_FLESS_EQUAL: BINARY_OP(cf, f64, u64, <=)
+        case INST_ULESS_EQUAL: BINARY_OP(cf, u64, u64, <=)
+        case INST_IGREATER: BINARY_OP(cf, i64, u64, >)
+        case INST_FGREATER: BINARY_OP(cf, f64, u64, >)
+        case INST_UGREATER: BINARY_OP(cf, u64, u64, >)
+        case INST_IGREATER_EQUALS: BINARY_OP(cf, i64, u64, >=)
+        case INST_FGREATER_EQUALS: BINARY_OP(cf, f64, u64, >=)
+        case INST_UGREATER_EQUALS: BINARY_OP(cf, u64, u64, >=)
+        case INST_EQ: BINARY_OP(cf, u64, u64, ==)
+        case INST_NEQ: BINARY_OP(cf, u64, u64, !=)
+        case INST_AND: BINARY_OP(cf, u64, u64, &)
+        case INST_OR: BINARY_OP(cf, u64, u64, |)
+        case INST_XOR: BINARY_OP(cf, u64, u64, ^)
+        case INST_LSHIFT: BINARY_OP(cf, u64, u64, <<)
+        case INST_RSHIFT: BINARY_OP(cf, u64, u64, >>)
         case INST_INT:
             if (interrupts[inst.operand.as_u64] == NULL) {
                 return STATUS_ILLEGAL_INTERRUPT;
@@ -285,7 +304,8 @@ Status cf_execute_inst(CF_Machine *cf) {
             if (cf->stack[cf->stack_size - 1].as_u64 >= CF_PROGRAM_SIZE(cf)) {
                 return STATUS_ILLEGAL_ACCESS;
             }
-            cf->program_counter = cf->stack[--cf->stack_size].as_u64 + 1;
+            cf->program_counter = cf->stack[cf->stack_size - 1].as_u64;
+            cf->stack_size -= 2;
             return STATUS_OK;
         case INST_LOAD_MEMORY:
             if (cf->stack_size >= STACK_CAPACITY) {

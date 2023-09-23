@@ -304,6 +304,44 @@ class Parser
                 return Opcode.FMOD;
             case "umod":
                 return Opcode.UMOD;
+            case "ile":
+                return Opcode.ILESS;
+            case "fle":
+                return Opcode.FLESS;
+            case "ule":
+                return Opcode.ULESS;
+            case "ileq":
+                return Opcode.ILESS_EQUAL;
+            case "fleq":
+                return Opcode.FLESS_EQUAL;
+            case "uleq":
+                return Opcode.ULESS_EQUAL;
+            case "ige":
+                return Opcode.IGREATER;
+            case "fge":
+                return Opcode.FGREATER;
+            case "uge":
+                return Opcode.UGREATER;
+            case "igeq":
+                return Opcode.IGREATER_EQUALS;
+            case "fgeq":
+                return Opcode.FGREATER_EQUALS;
+            case "ugeq":
+                return Opcode.UGREATER_EQUALS;
+            case "eq":
+                return Opcode.EQ;
+            case "neq":
+                return Opcode.NEQ;
+            case "and":
+                return Opcode.AND;
+            case "or":
+                return Opcode.OR;
+            case "xor":
+                return Opcode.XOR;
+            case "lshift":
+                return Opcode.LSHIFT;
+            case "rshift":
+                return Opcode.RSHIFT;
             case "int":
                 return Opcode.INT;
             case "jmp":
