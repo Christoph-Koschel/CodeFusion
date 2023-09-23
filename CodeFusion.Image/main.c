@@ -1,12 +1,18 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include "cf/CodeFusion.h"
 
-//#define SLOW
+#define SLOW
 
 CF_Machine cf = {0};
 
 extern char _binary_cf_code_bin_start[];
 extern char _binary_cf_code_bin_end[];
+
+static void exit_with(Status status) {
+    printf("VM stops with code '%x'\n", status);
+    exit(status == STATUS_OK ? 0 : 1);
+}
 
 int main(void) {
     Metadata metadata = {0};
@@ -18,7 +24,12 @@ int main(void) {
     cf_load_program(&buff, &metadata, &main_program);
     cf_load_memory(&buff, &metadata, &main_program);
 
+    if (metadata.entry_point >= main_program.program_size) {
+        exit_with(STATUS_ILLEGAL_ENTRY_POINT);
+    }
+    cf.program_counter = metadata.entry_point;
     cf.libraries[cf.library_size++] = main_program;
+
 
     Status status;
     do {
@@ -30,6 +41,6 @@ int main(void) {
         getchar();
 #endif
     } while (status == STATUS_OK);
-
-    printf("VM stops with code '%x'\n", status);
+    exit_with(status);
 }
+
