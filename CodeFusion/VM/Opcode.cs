@@ -1,6 +1,6 @@
 ﻿namespace CodeFusion.VM;
 
-// TODO improve Opcode docuemtation
+// TODO improve Opcode documentation
 
 public static class Opcode
 {
@@ -187,7 +187,7 @@ public static class Opcode
 
     public const byte ILESS = 29;
     public const byte FLESS = 30;
-    public const byte ULESS =  31;
+    public const byte ULESS = 31;
 
     public const byte ILESS_EQUAL = 32;
     public const byte FLESS_EQUAL = 33;
@@ -210,6 +210,13 @@ public static class Opcode
     public const byte LSHIFT = 46;
     public const byte RSHIFT = 47;
 
+    public const byte INEG = 49;
+    public const byte FNEG = 50;
+    public const byte UNEG = 51;
+
+    public const byte NOT = 52;
+    public const byte ONES = 53;
+
     /// <summary>
     /// int &lt;code><br /><br />
     /// Interrupt the machine with a specific function code
@@ -219,17 +226,17 @@ public static class Opcode
     ///     int 6 ; Interrupt the machine with the exit code 0, what will also exit the program
     /// </code>
     /// </summary>
-    public const byte INT = 48;
+    public const byte INT = 54;
 
-    public const byte JMP = 49;
-    public const byte JMP_ZERO = 50;
-    public const byte JMP_NOT_ZERO = 51;
+    public const byte JMP = 55;
+    public const byte JMP_ZERO = 56;
+    public const byte JMP_NOT_ZERO = 57;
 
-    public const byte CALL = 52;
-    public const byte VCALL = 53;
-    public const byte RET = 54;
+    public const byte CALL = 58;
+    public const byte VCALL = 59;
+    public const byte RET = 60;
 
-    public const byte LOAD_MEMORY = 55;
+    public const byte LOAD_MEMORY = 61;
 
     public static bool HasOperand(byte opcode)
     {

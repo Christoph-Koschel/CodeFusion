@@ -342,6 +342,16 @@ class Parser
                 return Opcode.LSHIFT;
             case "rshift":
                 return Opcode.RSHIFT;
+            case "ineg":
+                return Opcode.INEG;
+            case "fneg":
+                return Opcode.FNEG;
+            case "uneg":
+                return Opcode.UNEG;
+            case "not":
+                return Opcode.NOT;
+            case "ones":
+                return Opcode.ONES;
             case "int":
                 return Opcode.INT;
             case "jmp":

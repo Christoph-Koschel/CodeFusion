@@ -17,6 +17,15 @@
     return STATUS_OK;                                                                            \
 }                                                                                                \
 
+#define UNARY_OP(cf, in, out, op)                                                                \
+{                                                                                                \
+    if ((cf)->stack_size < 1) {                                                                  \
+        return STATUS_STACK_OVERFLOW;                                                            \
+    }                                                                                            \
+    (cf)->stack[(cf)->stack_size - 1].as_##out = op (cf)->stack[(cf)->stack_size - 1].as_##in;   \
+    return STATUS_OK;                                                                            \
+}
+
 #define CAST_OP(cf, from, to, cast)                                                              \
 {                                                                                                \
     if ((cf)->stack_size < 1) {                                                                  \
@@ -225,6 +234,11 @@ Status cf_execute_inst(CF_Machine *cf) {
         case INST_XOR: BINARY_OP(cf, u64, u64, ^)
         case INST_LSHIFT: BINARY_OP(cf, u64, u64, <<)
         case INST_RSHIFT: BINARY_OP(cf, u64, u64, >>)
+        case INST_INEG: UNARY_OP(cf, i64, i64, -)
+        case INST_FNEG: UNARY_OP(cf, f64, f64, -)
+        case INST_UNEG: UNARY_OP(cf, u64, u64, -)
+        case INST_NOT: UNARY_OP(cf, u64, u64, !)
+        case INST_ONES: UNARY_OP(cf, u64, u64, ~)
         case INST_INT:
             if (interrupts[inst.operand.as_u64] == NULL) {
                 return STATUS_ILLEGAL_INTERRUPT;
