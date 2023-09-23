@@ -49,4 +49,4 @@ $(LOADER_O): $(LOADERS_OBJ)
 	$(CC) $(CFLAGS) -c $< -o $@
 
 clean:
-	rm -f  $(IMAGES_OBJ) $(TABLES_OBJ)
+	rm -f  $(IMAGES_OBJ) $(TABLES_OBJ) $(LIBRARY_OBJ) $(LOADERS_OBJ) $(IMAGE_O) $(TABLE_O) $(LIBRARY_O) $(LOADER_O)
