@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <OutputType>Exe</OutputType>
+        <TargetFramework>net7.0</TargetFramework>
+        <AssemblyName>ils</AssemblyName>
+        <RootNamespace>IllusionScript.ISC</RootNamespace>
+    </PropertyGroup>
+
+    <Target Name="Copy" BeforeTargets="Build">
+        <ItemGroup>
+            <_Native Include="../native/*.*"/>
+        </ItemGroup>
+        <Copy SourceFiles="@(_Native)" DestinationFolder="$(OutDir)/native"/>
+    </Target>
+
+    <ItemGroup>
+      <ProjectReference Include="..\Runtime\Runtime.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <PackageReference Include="Mono.Options.Core" Version="1.0.0" />
+    </ItemGroup>
+
+</Project>
