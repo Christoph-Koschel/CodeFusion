@@ -1,0 +1,3 @@
+﻿[0] crtend:
+    push 0
+    int 6

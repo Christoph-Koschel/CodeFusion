@@ -1,0 +1,92 @@
+[10] get_stdout:
+    mallocpool get_stdout
+    push 8
+    store 0
+    push 2
+    store 8
+    int 0
+    push 2
+    load 8
+    push 8
+    load 0
+    freepool
+    ret
+
+[10] get_stdin:
+    mallocpool get_stdin
+    push 8
+    store 0
+    push 2
+    store 8
+    int 1
+    push 2
+    load 8
+    push 8
+    load 0
+    freepool
+    ret
+
+[10] get_stderr:
+    mallocpool get_stderr
+    push 8
+    store 0
+    push 2
+    store 8
+    int 2
+    push 2
+    load 8
+    push 8
+    load 0
+    freepool
+    ret
+
+[10] open:
+    mallocpool open
+    push 8
+    store 0
+    push 2
+    store 8
+    int 3
+    push 2
+    load 8
+    push 8
+    load 0
+    freepool
+    ret
+
+[10] write:
+    mallocpool open
+    push 8
+    store 0
+    push 2
+    store 8
+    int 4
+    push 2
+    load 8
+    push 8
+    load 0
+    freepool
+    ret
+
+[10] close:
+    mallocpool open
+    push 8
+    store 0
+    push 2
+    store 8
+    int 5
+    push 2
+    load 8
+    push 8
+    load 0
+    freepool
+    ret
+
+
+[10] exit:
+    mallocpool exit
+    push 8
+    store 0
+    push 2
+    store 8
+    int 6

@@ -1,0 +1,3 @@
+﻿[0] crtbegin:
+    call main
+    call crtend
