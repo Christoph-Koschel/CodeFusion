@@ -18,3 +18,5 @@ CodeFusion.sln.DotSettings.user
 *.bin
 *.o
 !tools/libc/**/*.o
+.cf
+cmake-build-debug
