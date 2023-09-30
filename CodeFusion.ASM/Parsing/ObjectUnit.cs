@@ -1,4 +1,3 @@
-using System.Linq;
 using CodeFusion.Format;
 
 namespace CodeFusion.ASM.Parsing;
