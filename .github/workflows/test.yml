@@ -1,0 +1,28 @@
+name: .NET Build & Test check
+
+on:
+  push:
+    branches:
+      - '**'
+  pull_request:
+    branches:
+      - '**'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@main
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v2
+        with:
+          dotnet-version: 7.0.x
+      - name: Restore dependencies
+        run: |
+          dotnet restore Runtime
+          dotnet restore Runtime.Test
+      - name: Build Runtime.Test
+        run: dotnet build Runtime.Test --no-restore
+      - name: Test
+        run: dotnet test Runtime.Test --no-build --verbosity normal
