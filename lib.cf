@@ -1,3 +1,0 @@
-﻿[0] exit:
-    push 0
-    int 6

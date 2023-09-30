@@ -3,6 +3,18 @@ extern define get_stdout(): u64;
 extern define get_stdin(): u64;
 extern define get_stderr(): u64;
 
+define count(c: string): u32 {
+    let i: u32 = 0;
+
+    while(true) {
+        if (c + i == 0) {
+            i = i + 1;
+        }
+    }
+
+    return i;
+}
+
 define main(): void {
     let str: string = "Hello World!\n";
 
