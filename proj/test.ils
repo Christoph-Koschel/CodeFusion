@@ -1,0 +1,11 @@
+﻿extern define write(fd: u64, buff: string, len: u64): void;
+extern define get_stdout(): u64;
+extern define get_stdin(): u64;
+extern define get_stderr(): u64;
+
+define main(): void {
+    let str: string = "Hello World!\n";
+
+    let stdout: u64 = get_stdout();
+    write(stdout, str, u32(13));
+}
