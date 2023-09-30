@@ -49,13 +49,17 @@ static Status cf_open(CF_Machine *cf) {
 }
 
 static Status cf_write(CF_Machine *cf) {
-    if (cf->stack_size < 4) {
+    if (cf->stack_size < 3) {
         return STATUS_STACK_UNDERFLOW;
     }
 
-    fwrite(cf->stack[cf->stack_size - 1].as_ptr, cf->stack[cf->stack_size - 2].as_u64,
-           cf->stack[cf->stack_size - 3].as_u64, cf->stack[cf->stack_size - 4].as_ptr);
-    cf->stack_size -= 4;
+    // 1 File
+    // 2 Buff
+    // 3 Lenght
+
+    fwrite(cf->stack[cf->stack_size - 2].as_ptr, cf->stack[cf->stack_size - 1].as_u64,
+           1, cf->stack[cf->stack_size - 3].as_ptr);
+    cf->stack_size -= 3;
     return STATUS_OK;
 }
 

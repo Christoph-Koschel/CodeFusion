@@ -4,6 +4,7 @@
 #include <memory.h>
 #include "machine.h"
 #include "opcode.h"
+#include "debug.h"
 
 
 #define BINARY_OP(cf, in, out, op)                                                               \
@@ -32,7 +33,6 @@
         return STATUS_STACK_UNDERFLOW;                                                           \
     }                                                                                            \
     (cf)->stack[(cf)->stack_size - 1].as_##to = cast (cf)->stack[(cf)->stack_size - 1].as_##from;\
-    (cf)->ip++;                                                                                  \
     return STATUS_OK;                                                                            \
 }
 
@@ -243,7 +243,7 @@ Status cf_execute_inst(CF_Machine *cf) {
             if (interrupts[inst.operand.as_u64] == NULL) {
                 return STATUS_ILLEGAL_INTERRUPT;
             }
-            printf("Interrupt %"PRIu64"\n", inst.operand.as_u64);
+            PRINT_DEBUG("Interrupt %"PRIu64"\n", inst.operand.as_u64);
             return interrupts[inst.operand.as_u64](cf);
         case INST_JMP:
             if (inst.operand.as_u64 >= CF_PROGRAM_SIZE(cf)) {
@@ -321,11 +321,17 @@ Status cf_execute_inst(CF_Machine *cf) {
             cf->program_counter = cf->stack[cf->stack_size - 1].as_u64;
             cf->stack_size -= 2;
             return STATUS_OK;
+        case INST_ITU: CAST_OP(cf, i64, u64, (uint64_t))
+        case INST_ITF: CAST_OP(cf, i64, f64, (double))
+        case INST_FTI: CAST_OP(cf, f64, i64, (int64_t))
+        case INST_FTU: CAST_OP(cf, f64, u64, (uint64_t))
+        case INST_UTI: CAST_OP(cf, u64, i64, (int64_t))
+        case INST_UTF: CAST_OP(cf, u64, f64, (double))
         case INST_LOAD_MEMORY:
             if (cf->stack_size >= STACK_CAPACITY) {
                 return STATUS_STACK_OVERFLOW;
             }
-            printf("Load memory address %"PRIu64" of size %"PRIu64"\n", inst.operand.as_u64, CF_MEMORY_SIZE(cf));
+            PRINT_DEBUG("Load memory address %"PRIu64" of size %"PRIu64"\n", inst.operand.as_u64, CF_MEMORY_SIZE(cf));
             if (inst.operand.as_u64 >= CF_MEMORY_SIZE(cf)) {
                 return STATUS_ILLEGAL_ACCESS;
             }

@@ -366,6 +366,18 @@ class Parser
                 return Opcode.VCALL;
             case "ret":
                 return Opcode.RET;
+            case "itu":
+                return Opcode.ITU;
+            case "itf":
+                return Opcode.ITF;
+            case "fti":
+                return Opcode.FTI;
+            case "ftu":
+                return Opcode.FTU;
+            case "uti":
+                return Opcode.UTI;
+            case "utf":
+                return Opcode.UTF;
             case "loadmemory":
                 return Opcode.LOAD_MEMORY;
         }

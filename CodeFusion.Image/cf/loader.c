@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include "loader.h"
 #include "opcode.h"
+#include "debug.h"
 
 static void read_buff(void *dst, size_t item_size, size_t count, void **buff) {
     void *dst2 = dst;
@@ -14,6 +15,7 @@ static void read_buff(void *dst, size_t item_size, size_t count, void **buff) {
 }
 
 void cf_load_metadata(void **buff, Metadata *metadata) {
+    PRINT_DEBUG("Start loading metadata\n");
     read_buff(metadata->magic, 1, 3, buff);
     read_buff(&metadata->version, sizeof(metadata->version), 1, buff);
     read_buff(&metadata->flags, sizeof(metadata->flags), 1, buff);
@@ -32,9 +34,11 @@ void cf_load_metadata(void **buff, Metadata *metadata) {
                 metadata->version, CURRENT_VERSION);
         exit(1);
     }
+    PRINT_DEBUG("Finished loading metadata\n");
 }
 
 void cf_load_pool(void **buff, Metadata *metadata, HashMap *pool) {
+    PRINT_DEBUG("Start loading stack pool\n");
     for (uint16_t i = 0; i < metadata->pool_size; i++) {
         uint64_t address;
         uint16_t value;
@@ -43,9 +47,11 @@ void cf_load_pool(void **buff, Metadata *metadata, HashMap *pool) {
 
         put_hash_map(pool, address, value);
     }
+    PRINT_DEBUG("Finished loading stack pool\n");
 }
 
 void cf_load_program(void **buff, Metadata *metadata, CF_Library *library) {
+    PRINT_DEBUG("Start loading program\n");
     for (size_t i = 0; i < metadata->program_size; i++) {
         Inst inst;
         read_buff(&inst.opcode, 1, 1, buff);
@@ -60,9 +66,11 @@ void cf_load_program(void **buff, Metadata *metadata, CF_Library *library) {
         }
         library->program[library->program_size++] = inst;
     }
+    PRINT_DEBUG("Finished loading program\n");
 }
 
 void cf_load_symbols(void **buff, Metadata *metadata, CF_Library *library) {
+    PRINT_DEBUG("Start loading symbols\n");
     for (size_t i = 0; i < metadata->symbol_size; i++) {
         uint64_t address;
         uint16_t size;
@@ -78,9 +86,12 @@ void cf_load_symbols(void **buff, Metadata *metadata, CF_Library *library) {
                 .address = address
         });
     }
+    PRINT_DEBUG("Finished loading symbols\n");
 }
 
 void cf_load_memory(void **buff, Metadata *metadata, CF_Library *library) {
+    PRINT_DEBUG("Start loading memory\n");
     library->memory_size = metadata->memory_size;
     library->memory = *buff;
+    PRINT_DEBUG("Finished loading memory\n");
 }

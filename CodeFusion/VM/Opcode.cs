@@ -236,7 +236,14 @@ public static class Opcode
     public const byte VCALL = 59;
     public const byte RET = 60;
 
-    public const byte LOAD_MEMORY = 61;
+    public const byte ITU = 61;
+    public const byte ITF = 62;
+    public const byte FTI = 63;
+    public const byte FTU = 64;
+    public const byte UTI = 65;
+    public const byte UTF = 66;
+
+    public const byte LOAD_MEMORY = 67;
 
     public static bool HasOperand(byte opcode)
     {
